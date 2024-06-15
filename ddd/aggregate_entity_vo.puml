@@ -1,0 +1,43 @@
+title Aggregate-Entity-VO 
+
+@startuml
+class Order <<Aggregate Root>> {
+    - orderId: OrderId
+    - customerId: CustomerId
+    - orderLines: List<OrderLine>
+    - shippingAddress: ShippingAddress
+    - payment: Payment
+    - status: OrderStatus
+    + addOrderLine(orderLine: OrderLine): void
+    + removeOrderLine(orderLine: OrderLine): void
+    + updateShippingAddress(address: ShippingAddress): void
+    + processPayment(payment: Payment): void
+    + calculateTotalAmount(): void
+}
+
+class OrderLine <<Entity>> {
+    - productId: ProductId
+    - quantity: int
+    - price: Money
+}
+
+class Payment <<Entity>> {
+    - paymentId: PaymentId
+    - amount: Money
+    - status: PaymentStatus
+    + process(): void
+    + cancel(): void
+}
+
+class ShippingAddress <<Value Object>> {
+    - recipient: String
+    - street: String
+    - city: String
+    - state: String
+    - zipCode: String
+}
+
+Order *-- OrderLine
+Order *-- ShippingAddress
+Order *-- Payment
+@enduml

@@ -1,0 +1,47 @@
+@startuml
+left to right direction
+scale 0.8
+skinparam packageStyle compact
+
+skinparam packageStyle rectangle
+skinparam defaultTextAlignment center
+
+package "은행 적금 도메인" {
+    package "적금 상품 관리" as SavingsProduct <<Core>> {
+        package "적금 상품 등록" as CreateProduct
+        package "적금 상품 조회" as ReadProduct
+        package "적금 상품 변경" as UpdateProduct
+    }
+
+    package "적금 계좌 관리" as SavingsAccount <<Core>> {
+        package "적금 계좌 개설" as CreateAccount
+        package "적금 계좌 조회" as ReadAccount
+        package "적금 계좌 해지" as CloseAccount
+        package "적금 계좌 변경" as UpdateAccount
+    }
+
+    package "적금 거래" as SavingsTransaction <<Core>> {
+        package "입금" as Deposit
+        package "중도해지" as EarlyTermination
+        package "만기해지" as MaturityTermination
+    }
+
+    package "고객 관리" as CustomerManagement <<Supporting>>
+
+    package "알림" as Notification <<Supporting>> {
+        package "입금 알림" as DepositNotification
+        package "만기 알림" as MaturityNotification
+    }
+
+    package "보고서" as Reporting <<Supporting>> {
+        package "적금 상품별 가입자 현황" as ProductSubscribersReport
+        package "적금 만기 예정 현황" as MaturitiesReport
+    }
+}
+
+SavingsAccount --> SavingsProduct
+SavingsTransaction --> SavingsAccount
+SavingsTransaction --> CustomerManagement
+Notification --> SavingsTransaction
+Reporting --> SavingsAccount
+@enduml

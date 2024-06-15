@@ -1,0 +1,44 @@
+@startuml
+
+left to right direction 
+skinparam packageStyle rectangle
+skinparam monochrome true
+skinparam shadowing false
+
+package "Domain" {
+  package "Presentation Layer" as PL {
+    [Controller] as Controller
+  }
+  package "Application Layer" as AL {
+     [Application Service] as ApplSvc
+  }
+  package "Domain Layer" as DL {
+     [Domain Service] as DomainSvc
+     package "Model" as Model {
+      [Aggregate] as Aggregate
+      [Entity] as Entity 
+      [Value Object] as VO
+     }
+  }
+  package "Data Access Layer" as DAL {
+    [Repository] as Repository
+  }
+}
+
+actor User
+entity ExternalService
+entity Database
+
+User --> Controller : API
+ExternalService --> Controller : API
+Controller o--> ApplSvc
+ApplSvc O--> DomainSvc
+ApplSvc O--> Repository
+DomainSvc O--> Repository
+DomainSvc --> Aggregate
+Aggregate O--> Entity 
+Entity *--> VO 
+Repository ..> Entity
+Repository --> Database : stores/retrieves
+
+@enduml
