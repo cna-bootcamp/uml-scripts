@@ -1,0 +1,80 @@
+title DDD tactical design example
+
+@startuml
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+package "com.mycompany.order" {
+    package "presentation" {
+        package "controller" {
+            class OrderController {
+                - orderApplicationService: OrderApplicationService
+
+                + placeOrder(request: PlaceOrderRequest): OrderResponse
+                + cancelOrder(request: CancelOrderRequest): OrderResponse
+            }
+        }
+
+        package "dto" {
+            class PlaceOrderRequest {}
+            class CancelOrderRequest {}
+            class OrderResponse {}
+        }
+    }
+
+    package "application" {
+        package "service" {
+            class OrderApplicationService {
+                - orderRepository: OrderRepository
+                - orderDomainService: OrderDomainService
+
+                + placeOrder(request: PlaceOrderRequest): void
+                + cancelOrder(request: CancelOrderRequest): void
+            }
+        }
+    }
+
+    package "domain" {
+        package "model" {
+            class Order {
+                - id: OrderId
+                - customerId: CustomerId
+                - orderLines: List<OrderLine>
+                - totalAmount: Money
+                - status: OrderStatus
+
+                + addOrderLine(orderLine: OrderLine): void
+                + removeOrderLine(orderLine: OrderLine): void
+            }
+
+            class OrderLine {
+                - productId: ProductId
+                - quantity: int
+                - price: Money
+            }
+        }
+
+        package "service" {
+            class OrderDomainService {
+                + changeOrderStatus(order: Order, newStatus: OrderStatus): void
+            }
+        }
+    }
+
+    package "infrastructure" {
+        package "repository" {
+            interface OrderRepository {
+                + save(order: Order): void
+                + findById(orderId: OrderId): Order
+            }
+        }
+    }
+}
+
+OrderController o-- OrderApplicationService
+OrderApplicationService o-- OrderRepository
+OrderApplicationService o-- OrderDomainService
+Order --* OrderLine
+OrderDomainService ..> Order
+OrderRepository ..> Order
+@enduml
