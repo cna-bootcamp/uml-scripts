@@ -1,0 +1,41 @@
+title Domain oriented design example
+
+@startuml
+package "com.mycompany.shoppingmall" {
+  package "product" {
+    class Product
+    class ProductRepository
+    class ProductService
+  }
+
+  package "order" {
+    class Order
+    class OrderRepository
+    class OrderService
+  }
+
+  package "user" {
+    class User
+    class UserRepository
+    class UserService
+  }
+
+  package "interfaces" {
+    class ProductController
+    class OrderController
+    class UserController
+  }
+}
+
+ProductController --> ProductService
+OrderController --> OrderService
+UserController --> UserService
+
+ProductService --> ProductRepository
+OrderService --> OrderRepository
+UserService --> UserRepository
+
+ProductRepository --> Product
+OrderRepository --> Order
+UserRepository --> User
+@enduml

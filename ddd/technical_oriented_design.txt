@@ -1,0 +1,42 @@
+title Technical oriented design example
+
+@startuml
+package "com.mycompany.shoppingmall" {
+  package "controllers" {
+    class ProductController
+    class OrderController
+    class UserController
+  }
+
+  package "services" {
+    class ProductService
+    class OrderService
+    class UserService
+  }
+
+  package "repositories" {
+    class ProductRepository
+    class OrderRepository
+    class UserRepository
+  }
+
+  package "models" {
+    class Product
+    class Order
+    class User
+  }
+}
+
+ProductController --> ProductService
+OrderController --> OrderService
+UserController --> UserService
+
+ProductService --> ProductRepository
+OrderService --> OrderRepository
+UserService --> UserRepository
+
+ProductRepository --> Product
+OrderRepository --> Order
+UserRepository --> User
+@enduml
+
