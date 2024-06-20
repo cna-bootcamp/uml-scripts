@@ -1,0 +1,87 @@
+
+title Layered Architecture example
+
+@startuml
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+package "com.mycompany.order" {
+    package "Presentation Layer" {
+        package "controller" {
+            class OrderController {
+                - orderApplicationService: OrderApplicationService
+                + placeOrder(request: PlaceOrderRequest): OrderResponse
+                + cancelOrder(request: CancelOrderRequest): OrderResponse
+            }
+        }
+        
+        package "dto" {
+            class PlaceOrderRequest {}
+            class CancelOrderRequest {}
+            class OrderResponse {}
+        }
+    }
+    
+    package "Application Layer" {
+        package "service" {
+            class OrderApplicationService {
+                - orderRepository: OrderRepository
+                - orderDomainService: OrderDomainService
+                + placeOrder(request: PlaceOrderRequest): void
+                + cancelOrder(request: CancelOrderRequest): void
+            }
+        }
+    }
+    
+    package "Domain Layer" {
+        package "model" {
+            class Order {
+                - id: OrderId
+                - customerId: CustomerId
+                - orderLines: List<OrderLine>
+                - totalAmount: Money
+                - status: OrderStatus
+                + addOrderLine(orderLine: OrderLine): void
+                + removeOrderLine(orderLine: OrderLine): void
+            }
+            
+            class OrderLine {
+                - productId: ProductId
+                - quantity: int
+                - price: Money
+            }
+            
+            class OrderAggregate {
+                - order: Order
+                + OrderAggregate(order: Order)
+                + addOrderLine(orderLine: OrderLine): void
+                + removeOrderLine(orderLine: OrderLine): void
+                + getOrder(): Order
+            }
+        }
+        
+        package "service" {
+            class OrderDomainService {
+                - orderRepository: OrderRepository
+                + changeOrderStatus(orderId: OrderId, newStatus: OrderStatus): void
+                + processOrder(order: Order): void
+                + cancelOrder(order: Order): void
+            }
+        }
+    }
+    
+    package "Data Access Layer" {
+        interface OrderRepository {
+            + save(order: Order): void
+            + findById(orderId: OrderId): Order
+        }
+    }
+}
+
+OrderController o-- OrderApplicationService
+OrderApplicationService o-- OrderRepository
+OrderApplicationService o-- OrderDomainService
+Order --* OrderLine
+OrderAggregate o-- Order
+OrderDomainService o-- OrderRepository
+OrderDomainService ..> OrderAggregate

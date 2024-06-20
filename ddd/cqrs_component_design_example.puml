@@ -1,0 +1,36 @@
+@startuml
+skinparam componentStyle rectangle
+
+package "Presentation Layer" {
+    component "Order Status UI" as UI
+}
+
+package "Application Layer" {
+    component "Order Command Handler" as OrderCommandHandler
+    component "Order Status Query Handler" as OrderStatusQueryHandler
+}
+
+package "Domain Layer" {
+    component "Order Aggregate" as OrderAggregate
+}
+
+package "Infrastructure Layer" {
+    component "Order Repository" as OrderRepository
+    component "Order Status View" as OrderStatusView
+    component "Order Event Store" as OrderEventStore
+}
+
+UI --> OrderCommandHandler : Place Order Command
+UI --> OrderStatusQueryHandler : Query Order Status
+
+OrderCommandHandler --> OrderAggregate : Create/Update Order
+OrderCommandHandler --> OrderRepository : Save Order
+OrderCommandHandler --> OrderEventStore : Publish Order Event
+
+OrderStatusQueryHandler --> OrderStatusView : Query Order Status
+
+OrderAggregate --> OrderEventStore : Publish Order Event
+
+OrderEventStore --> OrderStatusView : Subscribe to Order Events
+
+@enduml

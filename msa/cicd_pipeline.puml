@@ -1,0 +1,48 @@
+@startuml
+skinparam monochrome true
+start
+
+package "Build" {
+    :01.Git에서 소스 로딩;
+    :02.실행파일 생성;
+}
+package "Test" {
+    rectangle {
+        :03.단위/시스템 테스트;
+        if (테스트 통과?) then (no)
+            stop
+        endif
+    }
+    :04.소스 보안취약성 검사;
+    rectangle {
+        :05.품질기준 만족 검사;
+        if (Quality Gate 통과?) then (no)
+            stop
+        endif
+    }
+}
+package "Merge" {
+    :06.운영계 브랜치로 Merge;
+}
+
+package "Build image" {
+    :07.컨테이너 이미지 생성;
+    rectangle {
+        :08.이미지 보안성 검사;
+        if (심각한 취약성 발견?) then (yes)
+            stop
+        endif
+    }
+}
+
+package "Release" {
+    :09.컨테이니 이미지 푸시;
+}
+
+package "Deploy" {
+    :10.배포 매니페스트 파일 생성;
+    :11.클러스터에 서비스 배포;
+    :12.완료 통보(Slack);
+}
+stop
+@enduml

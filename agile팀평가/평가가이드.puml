@@ -1,0 +1,48 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+rectangle "1. 평가 목표 설정" {
+   rectangle "목적과 기대 효과 정의"
+   rectangle "평가 결과 활용 방안 결정"
+   rectangle "평가 범위와 주기 설정"
+}
+
+rectangle "2. 평가 기준 선정" {
+   rectangle "애자일 가치와 원칙 반영"
+   rectangle "성과, 협업, 의사소통, 문제 해결 능력, 고객 만족도 등"
+   rectangle "평가 기준 정의 및 측정 방법 설정"
+}
+
+rectangle "3. 평가 방법 결정" {
+   rectangle "정량적 평가" {
+       rectangle "속도(Velocity)와 예측 가능성 측정"
+       rectangle "결함 및 버그 발생률, 해결 시간 추적"
+       rectangle "고객 피드백과 사용자 만족도 조사 활용"
+   }
+   rectangle "정성적 평가" {
+       rectangle "팀 회고(Retrospective)"
+       rectangle "팀원 간 피어 리뷰(Peer Review)"
+       rectangle "이해관계자 인터뷰"
+   }
+}
+
+rectangle "4. 평가 수행 및 결과 분석" {
+   rectangle "평가 일정에 따른 평가 수행"
+   rectangle "데이터와 정보 수집 및 분석"
+   rectangle "평가 결과 공유 및 피드백 제공"
+   rectangle "개선 계획 수립 및 실행"
+}
+
+rectangle "5. 평가 프로세스 개선 및 문화 조성" {
+   rectangle "평가 프로세스 효과성 모니터링"
+   rectangle "평가 기준, 방법, 도구 업데이트 및 조정"
+   rectangle "평가의 긍정적 인식 확립"
+   rectangle "팀원 참여 독려 및 피드백 제공 환경 조성"
+}
+
+"1. 평가 목표 설정" --> "2. 평가 기준 선정"
+"2. 평가 기준 선정" --> "3. 평가 방법 결정"
+"3. 평가 방법 결정" --> "4. 평가 수행 및 결과 분석"
+"4. 평가 수행 및 결과 분석" --> "5. 평가 프로세스 개선 및 문화 조성"
+@enduml
