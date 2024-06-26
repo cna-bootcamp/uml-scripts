@@ -1,0 +1,31 @@
+@startuml
+class Menu {
+  - items: List<MenuItem>
+  + choose(name: String): MenuItem
+}
+
+class Customer {
+  + order(menuName: String, menu: Menu, barista: Barista): void
+}
+
+class MenuItem {
+  + getName(): String
+  + cost(): int
+}
+
+class Barista {
+  + makeCoffee(menuItem: MenuItem): Coffee
+}
+
+class Coffee {
+  - name: String
+  - price: int
+}
+
+Customer ..> Menu
+Customer ..> Barista
+Menu *-- MenuItem
+Barista ..> MenuItem
+Coffee ..> MenuItem
+Coffee <.. Barista
+@enduml
