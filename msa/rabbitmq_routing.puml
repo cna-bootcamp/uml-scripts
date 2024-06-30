@@ -1,0 +1,64 @@
+
+@startuml
+title Direct Exchange
+skinparam backgroundColor #EEEBDC
+skinparam handwritten false
+
+component "Producer" as Producer
+queue "Direct Exchange" as DirectExchange
+queue "Queue 1" as Queue1
+queue "Queue 2" as Queue2
+
+Producer -> DirectExchange : Routing Key
+DirectExchange -> Queue1 : Routing Key = "key1"
+DirectExchange -> Queue2 : Routing Key = "key2"
+@enduml
+
+@startuml
+title Fanout Exchange
+skinparam backgroundColor #EEEBDC
+skinparam handwritten false
+
+component "Producer" as Producer
+queue "Fanout Exchange" as FanoutExchange
+queue "Queue 1" as Queue1
+queue "Queue 2" as Queue2
+queue "Queue 3" as Queue3
+
+Producer -> FanoutExchange
+FanoutExchange -> Queue1
+FanoutExchange -> Queue2
+FanoutExchange -> Queue3
+@enduml
+
+@startuml
+title Topic Exchange
+skinparam backgroundColor #EEEBDC
+skinparam handwritten false
+
+component "Producer" as Producer
+queue "Topic Exchange" as TopicExchange
+queue "Queue 1" as Queue1
+queue "Queue 2" as Queue2
+queue "Queue 3" as Queue3
+
+Producer -> TopicExchange : Routing Key
+TopicExchange -> Queue1 : Binding Key = "*.orange.*"
+TopicExchange -> Queue2 : Binding Key = "*.*.rabbit"
+TopicExchange -> Queue3 : Binding Key = "lazy.#"
+@enduml
+
+@startuml
+title Header Exchange
+skinparam backgroundColor #EEEBDC
+skinparam handwritten false
+
+component "Producer" as Producer
+queue "Headers Exchange" as HeadersExchange
+queue "Queue 1" as Queue1
+queue "Queue 2" as Queue2
+
+Producer -> HeadersExchange : Headers
+HeadersExchange -> Queue1 : Headers match
+HeadersExchange -> Queue2 : Headers match
+@enduml

@@ -1,0 +1,55 @@
+@startuml
+skinparam backgroundColor #EEEBDC
+skinparam handwritten false
+
+component "MyGroup Service" as MyGroup {
+  [GroupEntity] as GroupEntity
+  [MyGroupController] as MyGroupController
+  [MyGroupService] as MyGroupService
+  [MyGroupProvider] as MyGroupProvider
+  [EventPublisher] as EventPublisher
+}
+
+component "MySub Service" as MySub {
+  [MySubQueryEntity] as MySubQueryEntity
+  [MySubController] as MySubController
+  [MySubService] as MySubService
+  [MySubProvider] as MySubProvider
+  [SubscribeEventHandler] as SubscribeEventHandler
+  [UnsubscribeEventHandler] as UnsubscribeEventHandler
+  [CreateGroupEventHandler] as CreateGroupEventHandler
+  [JoinGroupEventHandler] as JoinGroupEventHandler
+  [LeaveGroupEventHandler] as LeaveGroupEventHandler
+}
+
+queue "RabbitMQ" as RabbitMQ {
+  queue "Subscribe Queue" as SubscribeQueue
+  queue "Unsubscribe Queue" as UnsubscribeQueue
+  queue "Create Group Queue" as CreateGroupQueue
+  queue "Join Group Queue" as JoinGroupQueue
+  queue "Leave Group Queue" as LeaveGroupQueue
+}
+
+MyGroupController --> MyGroupService
+MyGroupService --> MyGroupProvider
+MyGroupProvider --> GroupEntity
+MyGroupProvider --> EventPublisher
+
+EventPublisher --> RabbitMQ
+
+MySubController --> MySubService
+MySubService --> MySubProvider
+MySubProvider --> MySubQueryEntity
+
+RabbitMQ --> SubscribeEventHandler
+RabbitMQ --> UnsubscribeEventHandler
+RabbitMQ --> CreateGroupEventHandler
+RabbitMQ --> JoinGroupEventHandler
+RabbitMQ --> LeaveGroupEventHandler
+
+SubscribeEventHandler --> MySubQueryEntity
+UnsubscribeEventHandler --> MySubQueryEntity
+CreateGroupEventHandler --> MySubQueryEntity
+JoinGroupEventHandler --> MySubQueryEntity
+LeaveGroupEventHandler --> MySubQueryEntity
+@enduml
