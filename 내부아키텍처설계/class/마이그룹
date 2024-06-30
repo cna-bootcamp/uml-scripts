@@ -1,0 +1,60 @@
+@startuml
+left to right direction
+
+package "mygrp-biz" {
+    package "domain" {
+        class Group
+    }
+    
+    package "usecase" {
+        package "inport" {
+            interface IMyGroupService
+        }
+        
+        package "outport" {
+            interface IMyGroupProvider
+        }
+        
+        package "service" {
+            class MyGroupServiceImpl
+            class RandomValueGenerator
+        }
+    }
+}
+
+package "mygrp-infra" {
+    package "dto" {
+        class GroupJoinDTO
+        class GroupDetailDTO
+        class GroupCreateDTO
+    }
+    
+    package "out" {
+        package "adapter" {
+            class MyGroupProviderImpl
+        }
+        
+        package "entity" {
+            class GroupEntity
+        }
+        
+        package "repo" {
+            interface IMyGroupRepository
+        }
+    }
+    
+    package "in" {
+        package "web" {
+            class MyGroupController
+            class MyGroupControllerHelper
+        }
+    }
+}
+
+MyGroupController ..> IMyGroupService
+MyGroupControllerHelper ..> IMyGroupRepository
+MyGroupServiceImpl .up.> IMyGroupProvider
+MyGroupServiceImpl ..> RandomValueGenerator
+MyGroupProviderImpl .up.|> IMyGroupProvider
+MyGroupProviderImpl ..> IMyGroupRepository
+@enduml

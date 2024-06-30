@@ -1,0 +1,67 @@
+
+유토스토리에 기반하여 클래스를 설계해 보자. 
+아래 조건을 반영해서 클래스 다이어그램을 PlantUML script로 만들어줘.
+답변은 한글로 하고 복사하기 쉽도록 해줘. 
+
+- 서비스, 유저스토리, 수용기준을 꼼꼼히 파악할 것 
+- 마이크로서비스별로 설계: 회원(Member), 마이그룹(MyGroup), 이체조회(Transfer), 마이구독(MySub), 구독추천( SubRecommend) 
+- 프라퍼티와 메소드를 모두 기술할 것
+- Controller클래스는 Biz프로젝트의 Service클래스와 Infra프로젝트의 ControllerHelper클래스만 의존함 
+- 클린 아키텍처 패턴 적용하며 패키지 구조와 클래스명 규칙은 아래와 같음
+{SERVICE}
+├── biz
+│   ├── usecase
+│   │   ├── inport
+│   │   │   ├── I{inport name}Service
+│   │   ├── outport
+│   │   │   ├── I{outport name}Provider
+│   │   └── service
+│   │       ├── {inport name}ServiceImpl
+│   ├── domain
+│   │   ├── {Domain name}
+│   ├── dto
+│   │   ├── {DTO name}DTO
+│   └── exception
+│       └── BizException
+├── infra
+│   ├── in
+│   │   └── web
+│   │       ├── {Controller name}Controller
+│   │       ├── {Controller name}ControllerHelper
+│   ├── out
+│   │   ├── repo
+│   │   │   ├── I{Entity name}Repository
+│   │   ├── adapter
+│   │   │   ├── {outport name}ProviderImpl
+│   │   └── entity
+│   │       ├── {Entity name}Entity
+│   ├── common
+│   │   ├── config
+│   ├── dto
+│   │   ├── {DTO name}DTO
+│   └── exception
+│       └── InfraException
+
+----------
+
+유저스토리에 기반하여 이체조회 서비스 클래스 설계를 하자. 
+간단한 서비스이기 때문에 Layered Architecture로 설계하자.
+
+- 서비스, 유저스토리, 수용기준을 꼼꼼히 파악할 것 
+- 패키지는 레어어에 따라 controller, service, repository, entity, dto, common, exception으로 나누자.
+common 밑에는 config, jwt를 배치해 
+- 프라퍼티와 메소드를 모두 기술할 것
+- 그룹명은 com.subride로 하고 서비스명은 transfer로 하자
+
+먼저 클래스명을 포함한 프로젝트 전체 구조를 보여줘
+클래스 설계는 plantuml script로 해줘
+---
+
+- leaderId 대신 Transfer 엔티티에 있는 groupId를 써야 하는거 같은데
+- config에는 LoggingAspect, SecurityConfig, SpringDocConfig를 배치
+- jwt에는 JwtTokenProvider, JwtAuthenticationFilter 배치
+- period는 ENUM 클래스 정의
+
+
+
+

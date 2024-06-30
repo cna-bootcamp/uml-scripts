@@ -1,0 +1,64 @@
+@startuml
+left to right direction
+
+package "subrecommend-biz" {
+    package "domain" {
+        class Category
+        class Sub
+    }
+    
+    package "usecase" {
+        package "inport" {
+            interface ISubRecommendService
+        }
+        
+        package "outport" {
+            interface ISubRecommendProvider
+        }
+        
+        package "service" {
+            class SubRecommendServiceImpl
+        }
+    }
+}
+
+package "subrecommend-infra" {
+    package "dto" {
+        class SubInfoDTO
+        class CategoryInfoDTO
+    }
+    
+    package "out" {
+        package "adapter" {
+            class SubRecommendProviderImpl
+        }
+        
+        package "entity" {
+            class SubEntity
+            class SpendingEntity
+            class CategoryEntity
+        }
+        
+        package "repo" {
+            interface ISubRepository
+            interface ISpendingRepository
+            interface ICategoryRepository
+        }
+    }
+    
+    package "in" {
+        package "web" {
+            class SubRecommendController
+            class SubRecommendControllerHelper
+        }
+    }
+}
+
+SubRecommendController ..> ISubRecommendService
+SubRecommendControllerHelper ..> ISubRepository
+SubRecommendServiceImpl .up.> ISubRecommendProvider
+SubRecommendProviderImpl .up.|> ISubRecommendProvider
+SubRecommendProviderImpl ..> ISpendingRepository
+SubRecommendProviderImpl ..> ICategoryRepository
+SubRecommendProviderImpl ..> ISubRepository
+@enduml

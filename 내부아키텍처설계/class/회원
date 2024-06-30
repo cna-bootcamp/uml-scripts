@@ -1,0 +1,68 @@
+@startuml
+left to right direction
+
+package "member-biz" {
+    package "domain" {
+        class Member
+        class Account
+    }
+    
+    package "usecase" {
+        package "inport" {
+            interface IAuthService
+        }
+        
+        package "outport" {
+            interface IAuthProvider
+        }
+        
+        package "service" {
+            class AuthServiceImpl
+        }
+    }
+}
+
+package "member-infra" {
+    package "dto" {
+        class MemberInfoDTO
+        class JwtTokenDTO
+        class LoginRequestDTO
+        class SignupRequestDTO
+    }
+    
+    package "out" {
+        package "adapter" {
+            class AuthProviderImpl
+        }
+        
+        package "entity" {
+            class MemberEntity
+            class AccountEntity
+        }
+        
+        package "repo" {
+            interface IMemberRepository
+            interface IAccountRepository
+        }
+    }
+    
+    package "in" {
+        package "web" {
+            class MemberController
+            class AuthController
+            class AuthControllerHelper
+            class MemberControllerHelper
+        }
+    }
+}
+
+MemberController ..> IAuthService
+AuthController ..> IAuthService
+AuthControllerHelper ..> IMemberRepository
+AuthControllerHelper ..> IAccountRepository
+MemberControllerHelper ..> IMemberRepository
+AuthServiceImpl .up.> IAuthProvider
+AuthProviderImpl .up.|> IAuthProvider
+AuthProviderImpl ..> IMemberRepository
+AuthProviderImpl ..> IAccountRepository
+@enduml

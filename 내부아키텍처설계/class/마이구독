@@ -1,0 +1,56 @@
+@startuml
+left to right direction
+
+package "mysub-biz" {
+    package "domain" {
+        class MySub
+    }
+    
+    package "usecase" {
+        package "inport" {
+            interface IMySubService
+        }
+        
+        package "outport" {
+            interface IMySubProvider
+        }
+        
+        package "service" {
+            class MySubServiceImpl
+        }
+    }
+}
+
+package "mysub-infra" {
+    package "dto" {
+        class MySubDTO
+    }
+    
+    package "out" {
+        package "adapter" {
+            class MySubProviderImpl
+        }
+        
+        package "entity" {
+            class MySubEntity
+        }
+        
+        package "repo" {
+            interface IMySubRepository
+        }
+    }
+    
+    package "in" {
+        package "web" {
+            class MySubController
+            class MySubControllerHelper
+        }
+    }
+}
+
+MySubController ..> IMySubService
+MySubControllerHelper ..> IMySubRepository
+MySubServiceImpl .up.> IMySubProvider
+MySubProviderImpl .up.|> IMySubProvider
+MySubProviderImpl ..> IMySubRepository
+@enduml

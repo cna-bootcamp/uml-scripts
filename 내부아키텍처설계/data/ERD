@@ -1,0 +1,82 @@
+@startuml
+' Hide the spot
+hide circle
+
+' Avoid problems with angled crows feet
+skinparam linetype ortho
+
+entity "members" as members {
+    *userId : string <<PK>>
+    --
+    userName : string
+    bankName : string
+    bankAccount : string
+    characterId : int
+}
+
+entity "accounts" as accounts {
+    *userId : string <<PK>>
+    --
+    password : string
+}
+
+entity "account_roles" as account_roles {
+    *userId : string <<FK>>
+    *role : string
+}
+
+entity "categories" as categories {
+    *id : long <<PK>>
+    --
+    categoryId : string
+    categoryName : string
+    spendingCategory : string
+}
+
+entity "subs" as subs {
+    *id : long <<PK>>
+    --
+    name : string
+    description : string
+    category_id : long <<FK>>
+    fee : long
+    maxShareNum : int
+    logo : string
+}
+
+entity "spending" as spending {
+    *id : long <<PK>>
+    --
+    userId : string
+    category : string
+    amount : long
+}
+
+entity "my_sub" as my_sub {
+    *id : long <<PK>>
+    --
+    userId : string
+    subId : long
+}
+
+entity "subgroup" as subgroup {
+    *groupId : long <<PK>>
+    --
+    groupName : string
+    subId : long
+    leaderId : string
+    bankName : string
+    bankAccount : string
+    paymentDay : int
+    inviteCode : string
+}
+
+entity "subgroup_member" as subgroup_member {
+    *group_id : long <<FK>>
+    *member_id : string
+}
+
+accounts ||--o{ account_roles
+categories ||--|{ subs
+subgroup ||--o{ subgroup_member
+@enduml

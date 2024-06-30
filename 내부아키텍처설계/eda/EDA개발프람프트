@@ -1,0 +1,135 @@
+
+마이구독서비스에 조회 전용 테이블을 만들고,
+RabbitMQ를 이용하여 CQRS패턴을 개발하려고 해
+Event는 아래와 같아. 
+각 이벤트별 처리를 하는 클래스를 만들어줘
+이벤트 객체는 각 서비스가 모두 공유하므로 common프로젝트에 적절한 패키지 밑에 만들어줘.
+이벤트별로 Queue는 다르게 해줘
+
+1. 구독하기 이벤트
+1) Publisher: 마이구독 
+2) Consumer: 마이구독
+3) 이벤트 구조 
+{
+  "type": "Subcribe",
+  "messageId": "{Ramdom UUID}",
+  "timestamp": "2023-06-15T10:30:00Z",
+  "payload": {
+    "userId": "user01",
+    "subId": 1L
+  }
+}
+4) 처리
+- my_sub_query 테이블에 데이터 생성
+- SubRecommendFeignClient.getSubDetail(Long subId)로 구독서비스의 categoryName, logo, description, fee, maxShareNum 을 가져와 데이터 생성
+- joinGroup은 false로 함
+- payedFee은 fee와 동일하게 함
+- discountedFee는 0으로 함 
+
+2. 탈퇴 이벤트
+1) Publisher: 마이구독 
+2) Consumer: 마이구독
+3) 이벤트 구조 
+{
+  "type": "Unsubcribe",
+  "messageId": "{Ramdom UUID}",
+  "timestamp": "2023-06-15T10:30:00Z",
+  "payload": {
+    "userId": "user01",
+    "subId": 1L
+  }
+}
+4) 처리
+- my_sub_query 테이블의 데이터 삭제 
+
+3. 마이그룹 생성
+1) Publisher: 마이그룹
+2) Consumer: 마이구독
+3) 이벤트
+{
+  "type": "CreateGroup",
+  "messageId": "{Ramdom UUID}",
+  "timestamp": "2023-06-15T10:30:00Z",
+  "payload": {
+    "userId": "user01",
+    "groupId": 1L,
+    "groupName": "Group1",
+    "memberCount": 1
+    "subId": 1L
+  }
+}
+4) 처리
+- my_sub_query에서 데이터를 찾아 joinGroup은 true로 하고, groupName, memberCount를 이벤트 데이터 값으로 업데이트
+
+4. 마이그룹 참여
+1) Publisher: 마이그룹
+2) Consumer: 마이구독
+3) 이벤트
+{
+  "type": "JoinGroup",
+  "messageId": "{Ramdom UUID}",
+  "timestamp": "2023-06-15T10:30:00Z",
+  "payload": {
+    "userId": "user01",
+    "groupId": 1L,
+    "subId": 1L,
+    "memberCount": 3
+  }
+}
+4) 처리
+- my_sub_query에서 데이터를 찾음. 있으면 joinGroup=true, memberCount를 업데이트 하고 payedFee와 disCountedFee를 계산함
+- 데이터가 없는 경우 생성. SubRecommendFeignClient.getSubDetail(Long subId)로 구독서비스의 categoryName, logo, description, fee, maxShareNum 을 가져와 데이터 생성. joinGroup은 true로 함. memberCount를 업데이트 하고 payedFee와 disCountedFee를 계산함
+
+5. 마이그룹 탈퇴
+1) Publisher: 마이그룹
+2) Consumer: 마이구독
+3) 이벤트
+{
+  "type": "LeaveGroup",
+  "messageId": "{Ramdom UUID}",
+  "timestamp": "2023-06-15T10:30:00Z",
+  "payload": {
+    "userId": "user01",
+    "groupId": 1L,
+    "subId": 1L,
+    "memberCount": 3
+  }
+}
+4) 처리
+- my_sub_query에서 데이터를 찾음. 있으면 joinGroup=false, memberCount를 업데이트 하고 payedFee와 disCountedFee를 계산함
+
+============
+마이구독 조회 테이블 
+
+@Entity
+@Table(name = "my_sub_query")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class MySubQueryEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String userId;
+    private Long subId;
+    private String categoryName;
+    private String logo;
+    private String description;
+    private Long fee;
+    private int maxShareNum;
+    private boolean joinGroup;
+    private Long groupId;
+    private String groupName;
+    private int memberCount;
+    private Long payedFee;
+    private Long discountedFee;
+}
+
+
+===============================
+
+마이구독 서비스에 구독하기와 탈퇴 이벤트 Publishing하는 코드를 만들어줘
+

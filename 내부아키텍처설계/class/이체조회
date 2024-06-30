@@ -1,0 +1,99 @@
+@startuml
+package com.subride.transfer {
+  package controller {
+    class TransferController {
+      - transferService: TransferService
+      + getTransferHistory(groupId: Long, period: Period): List<TransferResponse>
+    }
+  }
+
+  package service {
+    class TransferService {
+      - transferRepository: TransferRepository
+      + getTransferHistory(groupId: Long, period: Period): List<TransferResponse>
+    }
+  }
+
+  package repository {
+    interface TransferRepository {
+      + findByGroupIdAndPeriod(groupId: Long, startDate: LocalDate, endDate: LocalDate): List<Transfer>
+    }
+  }
+
+  package entity {
+    class Transfer {
+      - id: Long
+      - groupId: Long
+      - memberId: Long
+      - amount: BigDecimal
+      - transferDate: LocalDate
+    }
+  }
+
+  package dto {
+    class TransferRequest {
+      - groupId: Long
+      - period: Period
+    }
+
+    class TransferResponse {
+      - memberId: Long
+      - amount: BigDecimal
+      - transferDate: LocalDate
+    }
+  }
+
+  package common {
+    package config {
+      class LoggingAspect {
+        + logAround(joinPoint: ProceedingJoinPoint): Object
+      }
+
+      class SecurityConfig {
+        + configure(http: HttpSecurity): void
+      }
+
+      class SpringDocConfig {
+        + api(): OpenAPI
+      }
+    }
+
+    package jwt {
+      class JwtTokenProvider {
+        - secretKey: String
+        - tokenValidityInMilliseconds: long
+        + generateToken(userDetails: UserDetails): String
+        + validateToken(token: String): boolean
+        + getUserIdFromToken(token: String): Long
+      }
+
+      class JwtAuthenticationFilter {
+        - jwtTokenProvider: JwtTokenProvider
+        + doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain): void
+      }
+    }
+  }
+
+  package exception {
+    class TransferException {
+      - message: String
+      + TransferException(message: String)
+    }
+  }
+
+  package enums {
+    enum Period {
+      THREE_MONTHS
+      ONE_YEAR
+    }
+  }
+
+  TransferController --> TransferService
+  TransferService --> TransferRepository
+  TransferRepository --> Transfer
+  TransferController ..> TransferRequest
+  TransferController ..> TransferResponse
+  TransferService ..> TransferResponse
+  TransferRequest --> Period
+}
+@enduml

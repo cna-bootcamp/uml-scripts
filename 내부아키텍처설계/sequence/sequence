@@ -1,0 +1,350 @@
+@startuml
+' 회원(User) 마이크로서비스
+box "User Microservice" #LightBlue
+participant "AuthController" as authController <<infra.in.web>>
+participant "IAuthService" as authService
+participant "MemberController" as memberController <<infra.in.web>>
+participant "IMemberService" as memberService
+
+' AuthController 메소드
+'authController --> authController: signup(signupRequestDTO)\nlogin(loginRequestDTO)
+
+' 회원 가입 시퀀스
+group 회원 가입 시퀀스
+-> authController: signup(signupRequestDTO)
+activate authController
+authController -> authService: signup(signupRequestDTO)
+activate authService
+authService -> authService: checkDuplicateUserId(userId)
+authService -> authService: validatePassword(password)
+authService -> authService: createAccount(account)
+authService -> authService: createMember(member)
+authService --> authController: success
+deactivate authService
+authController --> : success
+deactivate authController
+end
+
+' 로그인 시퀀스
+group 로그인 시퀀스
+-> authController: login(loginRequestDTO)
+activate authController
+authController -> authService: login(userId, password)
+activate authService
+authService -> authService: authenticateUser(userId, password)
+authService -> authService: generateToken(userId)
+authService --> authController: jwtTokenDTO
+deactivate authService
+authController --> : jwtTokenDTO
+deactivate authController
+end
+
+' MemberController 메소드
+'memberController --> memberController: getMemberInfo(memberId)\nupdateMemberInfo(memberId, memberUpdateRequestDTO)
+
+' 회원 정보 조회 시퀀스
+group 회원 정보 조회 시퀀스
+-> memberController: getMemberInfo(memberId)
+activate memberController
+memberController -> memberService: getMemberInfo(memberId)
+activate memberService
+memberService -> memberService: getMember(memberId)
+memberService --> memberController: memberInfoDTO
+deactivate memberService
+memberController --> : memberInfoDTO
+deactivate memberController
+end
+
+' 회원 정보 수정 시퀀스
+group 회원 정보 수정 시퀀스
+-> memberController: updateMemberInfo(memberId, memberUpdateRequestDTO)
+activate memberController
+memberController -> memberService: updateMemberInfo(memberId, memberUpdateRequestDTO)
+activate memberService
+memberService -> memberService: getMember(memberId)
+memberService -> memberService: updateMember(member)
+memberService --> memberController: success
+deactivate memberService
+memberController --> : success
+deactivate memberController
+end
+end box
+
+' 마이썹(MySubGroup) 마이크로서비스
+box "MySubGroup Microservice" #LightGreen
+participant "MySubGroupController" as mySubGroupController <<infra.in.web>>
+participant "IMySubGroupService" as mySubGroupService
+
+' MySubGroupController 메소드
+'mySubGroupController --> mySubGroupController: createSubGroup(subGroup)\njoinSubGroup(userId, invitationCode)\ngetMySubGroups(userId)\ngetSubGroupDetails(subGroupId)\ngetInvitationCode(subGroupId)\nleaveSubGroup(userId, subGroupId)
+
+' 마이썹 생성 시퀀스
+group 마이썹 생성 시퀀스
+-> mySubGroupController: createSubGroup(subGroup)
+activate mySubGroupController
+mySubGroupController -> mySubGroupService: createSubGroup(subGroup)
+activate mySubGroupService
+mySubGroupService -> "MySubController": getSubscriptionsByUserId(userId)
+activate "MySubController"
+"MySubController" -> "SubRecommendController": getSubscriptionById(subscriptionId)
+activate "SubRecommendController"
+"SubRecommendController" --> "MySubController": subscription
+deactivate "SubRecommendController"
+"MySubController" --> mySubGroupService: subscriptions
+deactivate "MySubController"
+mySubGroupService -> mySubGroupService: saveSubGroup(subGroup)
+mySubGroupService --> mySubGroupController: success
+deactivate mySubGroupService
+mySubGroupController --> : success
+deactivate mySubGroupController
+end
+
+' 마이썹 참여 시퀀스
+group 마이썹 참여 시퀀스
+-> mySubGroupController: joinSubGroup(userId, invitationCode)
+activate mySubGroupController
+mySubGroupController -> mySubGroupService: joinSubGroup(userId, invitationCode)
+activate mySubGroupService
+mySubGroupService -> mySubGroupService: getSubGroupByInvitationCode(invitationCode)
+mySubGroupService -> mySubGroupService: checkMemberLimit(subGroup)
+mySubGroupService -> mySubGroupService: addMember(subGroup, userId)
+mySubGroupService --> mySubGroupController: success
+deactivate mySubGroupService
+mySubGroupController --> : success
+deactivate mySubGroupController
+end
+
+' 사용자의 마이썹 목록 조회 시퀀스
+group 사용자의 마이썹 목록 조회 시퀀스
+-> mySubGroupController: getMySubGroups(userId)
+activate mySubGroupController
+mySubGroupController -> mySubGroupService: getMySubGroups(userId)
+activate mySubGroupService
+mySubGroupService -> mySubGroupService: getSubGroupsByUserId(userId)
+mySubGroupService --> mySubGroupController: subGroups
+deactivate mySubGroupService
+mySubGroupController --> : subGroups
+deactivate mySubGroupController
+end
+
+' 마이썹 상세 조회 시퀀스
+group 마이썹 상세 조회 시퀀스
+-> mySubGroupController: getSubGroupDetails(subGroupId)
+activate mySubGroupController
+mySubGroupController -> mySubGroupService: getSubGroupDetails(subGroupId)
+activate mySubGroupService
+mySubGroupService -> mySubGroupService: getSubGroupById(subGroupId)
+mySubGroupService --> mySubGroupController: subGroup
+deactivate mySubGroupService
+mySubGroupController --> : subGroup
+deactivate mySubGroupController
+end
+
+' 초대코드 조회 시퀀스
+group 초대코드 조회 시퀀스
+-> mySubGroupController: getInvitationCode(subGroupId)
+activate mySubGroupController
+mySubGroupController -> mySubGroupService: getInvitationCode(subGroupId)
+activate mySubGroupService
+mySubGroupService -> mySubGroupService: getSubGroupById(subGroupId)
+mySubGroupService --> mySubGroupController: invitationCode
+deactivate mySubGroupService
+mySubGroupController --> : invitationCode
+deactivate mySubGroupController
+end
+
+' 마이썹 탈퇴 시퀀스
+group 마이썹 탈퇴 시퀀스
+-> mySubGroupController: leaveSubGroup(userId, subGroupId)
+activate mySubGroupController
+mySubGroupController -> mySubGroupService: leaveSubGroup(userId, subGroupId)
+activate mySubGroupService
+mySubGroupService -> mySubGroupService: getSubGroupById(subGroupId)
+mySubGroupService -> mySubGroupService: removeMember(subGroup, userId)
+mySubGroupService --> mySubGroupController: success
+deactivate mySubGroupService
+mySubGroupController --> : success
+deactivate mySubGroupController
+end
+end box
+
+' 이체조회(TransferInquiry) 마이크로서비스
+box "TransferInquiry Microservice" #LightPink
+participant "TransferInquiryController" as transferInquiryController <<infra.in.web>>
+participant "ITransferInquiryService" as transferInquiryService
+
+' TransferInquiryController 메소드
+'transferInquiryController --> transferInquiryController: getRecentTransfers(subGroupId, period)\ngetAllTransfers(subGroupId, period)
+
+' 최근 이체내역 조회 시퀀스
+group 최근 이체내역 조회 시퀀스
+-> transferInquiryController: getRecentTransfers(subGroupId, period)
+activate transferInquiryController
+transferInquiryController -> transferInquiryService: getRecentTransfers(subGroupId, period)
+activate transferInquiryService
+transferInquiryService -> transferInquiryService: getTransfersBySubGroupId(subGroupId, startDate, endDate)
+transferInquiryService --> transferInquiryController: transfers
+deactivate transferInquiryService
+transferInquiryController --> : transfers
+deactivate transferInquiryController
+end
+
+' 전체 이체내역 조회 시퀀스
+group 전체 이체내역 조회 시퀀스
+-> transferInquiryController: getAllTransfers(subGroupId, period)
+activate transferInquiryController
+transferInquiryController -> transferInquiryService: getAllTransfers(subGroupId, period)
+activate transferInquiryService
+transferInquiryService -> transferInquiryService: getTransfersBySubGroupId(subGroupId, startDate, endDate)
+transferInquiryService --> transferInquiryController: transfers
+deactivate transferInquiryService
+transferInquiryController --> : transfers
+deactivate transferInquiryController
+end
+end box
+
+' 마이구독(MySub) 마이크로서비스
+box "MySub Microservice" #LightYellow
+participant "MySubController" as mySubController <<infra.in.web>>
+participant "IMySubService" as mySubService
+
+' MySubController 메소드
+'mySubController --> mySubController: getMySubscriptions(userId)\ngetSubscriptionDetails(subscriptionId)\ngetTotalSubscriptionFee(userId)\ngetTotalSavingAmount(userId)\nsubscribeService(userId, subscriptionId)\nunsubscribeService(userId, subscriptionId)
+
+' 사용자의 구독 목록 조회 시퀀스
+group 사용자의 구독 목록 조회 시퀀스
+-> mySubController: getMySubscriptions(userId)
+activate mySubController
+mySubController -> mySubService: getMySubscriptions(userId)
+activate mySubService
+mySubService -> mySubService: getSubscriptionsByUserId(userId)
+mySubService -> "SubRecommendController": getSubscriptionById(subscriptionId)
+activate "SubRecommendController"
+"SubRecommendController" --> mySubService: subscription
+deactivate "SubRecommendController"
+mySubService --> mySubController: subscriptions
+deactivate mySubService
+mySubController --> : subscriptions
+deactivate mySubController
+end
+
+' 구독 상세 조회 시퀀스
+group 구독 상세 조회 시퀀스
+-> mySubController: getSubscriptionDetails(subscriptionId)
+activate mySubController
+mySubController -> mySubService: getSubscriptionDetails(subscriptionId)
+activate mySubService
+mySubService -> "SubRecommendController": getSubscriptionById(subscriptionId)
+activate "SubRecommendController"
+"SubRecommendController" --> mySubService: subscription
+deactivate "SubRecommendController"
+mySubService --> mySubController: subscription
+deactivate mySubService
+mySubController --> : subscription
+deactivate mySubController
+end
+
+' 총 구독료 조회 시퀀스
+group 총 구독료 조회 시퀀스
+-> mySubController: getTotalSubscriptionFee(userId)
+activate mySubController
+mySubController -> mySubService: getTotalSubscriptionFee(userId)
+activate mySubService
+mySubService -> mySubService: getSubscriptionsByUserId(userId)
+mySubService -> mySubService: calculateTotalFee(subscriptions)
+mySubService --> mySubController: totalFee
+deactivate mySubService
+mySubController --> : totalFee
+deactivate mySubController
+end
+
+' 총 절감액 조회 시퀀스
+group 총 절감액 조회 시퀀스
+-> mySubController: getTotalSavingAmount(userId)
+activate mySubController
+mySubController -> mySubService: getTotalSavingAmount(userId)
+activate mySubService
+mySubService -> mySubService: getSubscriptionsByUserId(userId)
+mySubService -> mySubService: calculateTotalSavingAmount(subscriptions)
+mySubService --> mySubController: totalSavingAmount
+deactivate mySubService
+mySubController --> : totalSavingAmount
+deactivate mySubController
+end
+
+' 구독 서비스 구독 시퀀스
+group 구독 서비스 구독 시퀀스
+-> mySubController: subscribeService(userId, subscriptionId)
+activate mySubController
+mySubController -> mySubService: subscribeService(userId, subscriptionId)
+activate mySubService
+mySubService -> mySubService: createUserSubscription(userId, subscriptionId)
+mySubService --> mySubController: success
+deactivate mySubService
+mySubController --> : success
+deactivate mySubController
+end
+
+' 구독 서비스 구독 취소 시퀀스
+group 구독 서비스 구독 취소 시퀀스
+-> mySubController: unsubscribeService(userId, subscriptionId)
+activate mySubController
+mySubController -> mySubService: unsubscribeService(userId, subscriptionId)
+activate mySubService
+mySubService -> mySubService: deleteUserSubscription(userId, subscriptionId)
+mySubService --> mySubController: success
+deactivate mySubService
+mySubController --> : success
+deactivate mySubController
+end
+end box
+
+' 구독추천(SubRecommend) 마이크로서비스
+box "SubRecommend Microservice" #LightGray
+participant "SubRecommendController" as subRecommendController <<infra.in.web>>
+participant "ISubRecommendService" as subRecommendService
+
+' SubRecommendController 메소드
+'subRecommendController --> subRecommendController: getTopSpendingCategory(userId)\ngetRecommendedSubscriptions(category)\ngetSubscriptionDetails(subscriptionId)
+
+' 최고 지출 카테고리 조회 시퀀스
+group 최고 지출 카테고리 조회 시퀀스
+-> subRecommendController: getTopSpendingCategory(userId)
+activate subRecommendController
+subRecommendController -> subRecommendService: getTopSpendingCategory(userId)
+activate subRecommendService
+subRecommendService -> subRecommendService: getSpendingHistoryByUserId(userId)
+subRecommendService -> subRecommendService: calculateTopSpendingCategory(spendingHistory)
+subRecommendService --> subRecommendController: topSpendingCategory
+deactivate subRecommendService
+subRecommendController --> : topSpendingCategory
+deactivate subRecommendController
+end
+
+' 추천 구독 서비스 조회 시퀀스
+group 추천 구독 서비스 조회 시퀀스
+-> subRecommendController: getRecommendedSubscriptions(category)
+activate subRecommendController
+subRecommendController -> subRecommendService: getRecommendedSubscriptions(category)
+activate subRecommendService
+subRecommendService -> subRecommendService: getSubscriptionsByCategory(category)
+subRecommendService --> subRecommendController: subscriptions
+deactivate subRecommendService
+subRecommendController --> : subscriptions
+deactivate subRecommendController
+end
+
+' 구독 상세 조회 시퀀스
+group 구독 상세 조회 시퀀스
+-> subRecommendController: getSubscriptionDetails(subscriptionId)
+activate subRecommendController
+subRecommendController -> subRecommendService: getSubscriptionDetails(subscriptionId)
+activate subRecommendService
+subRecommendService -> subRecommendService: getSubscriptionById(subscriptionId)
+subRecommendService --> subRecommendController: subscription
+deactivate subRecommendService
+subRecommendController --> : subscription
+deactivate subRecommendController
+end
+end box
+@enduml
