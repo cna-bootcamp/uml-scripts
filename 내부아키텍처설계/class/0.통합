@@ -1,0 +1,354 @@
+@startuml
+left to right direction
+
+package "subrecommend-biz" {
+    package "domain" {
+        class Category
+        class Sub
+    }
+    
+    package "usecase" {
+        package "inport" {
+            interface ISubRecommendService
+        }
+        
+        package "outport" {
+            interface ISubRecommendProvider
+        }
+        
+        package "service" {
+            class SubRecommendServiceImpl
+        }
+    }
+}
+
+package "subrecommend-infra" {
+    package "dto" {
+        class SubInfoDTO
+        class CategoryInfoDTO
+    }
+    
+    package "out" {
+        package "adapter" {
+            class SubRecommendProviderImpl
+        }
+        
+        package "entity" {
+            class SubEntity
+            class SpendingEntity
+            class CategoryEntity
+        }
+        
+        package "repo" {
+            interface ISubRepository
+            interface ISpendingRepository
+            interface ICategoryRepository
+        }
+    }
+    
+    package "in" {
+        package "web" {
+            class SubRecommendController
+            class SubRecommendControllerHelper
+        }
+    }
+}
+
+SubRecommendController ..> ISubRecommendService
+SubRecommendControllerHelper ..> ISubRepository
+SubRecommendServiceImpl .up.> ISubRecommendProvider
+SubRecommendProviderImpl .up.|> ISubRecommendProvider
+SubRecommendProviderImpl ..> ISpendingRepository
+SubRecommendProviderImpl ..> ICategoryRepository
+SubRecommendProviderImpl ..> ISubRepository
+@enduml
+
+@startuml
+left to right direction
+
+package "mysub-biz" {
+    package "domain" {
+        class MySub
+    }
+    
+    package "usecase" {
+        package "inport" {
+            interface IMySubService
+        }
+        
+        package "outport" {
+            interface IMySubProvider
+        }
+        
+        package "service" {
+            class MySubServiceImpl
+        }
+    }
+}
+
+package "mysub-infra" {
+    package "dto" {
+        class MySubDTO
+    }
+    
+    package "out" {
+        package "adapter" {
+            class MySubProviderImpl
+        }
+        
+        package "entity" {
+            class MySubEntity
+        }
+        
+        package "repo" {
+            interface IMySubRepository
+        }
+    }
+    
+    package "in" {
+        package "web" {
+            class MySubController
+            class MySubControllerHelper
+        }
+    }
+}
+
+MySubController ..> IMySubService
+MySubControllerHelper ..> IMySubRepository
+MySubServiceImpl .up.> IMySubProvider
+MySubProviderImpl .up.|> IMySubProvider
+MySubProviderImpl ..> IMySubRepository
+@enduml
+
+@startuml
+left to right direction
+
+package "mygrp-biz" {
+    package "domain" {
+        class Group
+    }
+    
+    package "usecase" {
+        package "inport" {
+            interface IMyGroupService
+        }
+        
+        package "outport" {
+            interface IMyGroupProvider
+        }
+        
+        package "service" {
+            class MyGroupServiceImpl
+            class RandomValueGenerator
+        }
+    }
+}
+
+package "mygrp-infra" {
+    package "dto" {
+        class GroupJoinDTO
+        class GroupDetailDTO
+        class GroupCreateDTO
+    }
+    
+    package "out" {
+        package "adapter" {
+            class MyGroupProviderImpl
+        }
+        
+        package "entity" {
+            class GroupEntity
+        }
+        
+        package "repo" {
+            interface IMyGroupRepository
+        }
+    }
+    
+    package "in" {
+        package "web" {
+            class MyGroupController
+            class MyGroupControllerHelper
+        }
+    }
+}
+
+MyGroupController ..> IMyGroupService
+MyGroupControllerHelper ..> IMyGroupRepository
+MyGroupServiceImpl .up.> IMyGroupProvider
+MyGroupServiceImpl ..> RandomValueGenerator
+MyGroupProviderImpl .up.|> IMyGroupProvider
+MyGroupProviderImpl ..> IMyGroupRepository
+@enduml
+
+@startuml
+package com.subride.transfer {
+  package controller {
+    class TransferController {
+      - transferService: TransferService
+      + getTransferHistory(groupId: Long, period: Period): List<TransferResponse>
+    }
+  }
+
+  package service {
+    class TransferService {
+      - transferRepository: TransferRepository
+      + getTransferHistory(groupId: Long, period: Period): List<TransferResponse>
+    }
+  }
+
+  package repository {
+    interface TransferRepository {
+      + findByGroupIdAndPeriod(groupId: Long, startDate: LocalDate, endDate: LocalDate): List<Transfer>
+    }
+  }
+
+  package entity {
+    class Transfer {
+      - id: Long
+      - groupId: Long
+      - memberId: Long
+      - amount: BigDecimal
+      - transferDate: LocalDate
+    }
+  }
+
+  package dto {
+    class TransferRequest {
+      - groupId: Long
+      - period: Period
+    }
+
+    class TransferResponse {
+      - memberId: Long
+      - amount: BigDecimal
+      - transferDate: LocalDate
+    }
+  }
+
+  package common {
+    package config {
+      class LoggingAspect {
+        + logAround(joinPoint: ProceedingJoinPoint): Object
+      }
+
+      class SecurityConfig {
+        + configure(http: HttpSecurity): void
+      }
+
+      class SpringDocConfig {
+        + api(): OpenAPI
+      }
+    }
+
+    package jwt {
+      class JwtTokenProvider {
+        - secretKey: String
+        - tokenValidityInMilliseconds: long
+        + generateToken(userDetails: UserDetails): String
+        + validateToken(token: String): boolean
+        + getUserIdFromToken(token: String): Long
+      }
+
+      class JwtAuthenticationFilter {
+        - jwtTokenProvider: JwtTokenProvider
+        + doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain): void
+      }
+    }
+  }
+
+  package exception {
+    class TransferException {
+      - message: String
+      + TransferException(message: String)
+    }
+  }
+
+  package enums {
+    enum Period {
+      THREE_MONTHS
+      ONE_YEAR
+    }
+  }
+
+  TransferController --> TransferService
+  TransferService --> TransferRepository
+  TransferRepository --> Transfer
+  TransferController ..> TransferRequest
+  TransferController ..> TransferResponse
+  TransferService ..> TransferResponse
+  TransferRequest --> Period
+}
+@enduml
+
+@startuml
+left to right direction
+
+package "member-biz" {
+    package "domain" {
+        class Member
+        class Account
+    }
+    
+    package "usecase" {
+        package "inport" {
+            interface IAuthService
+        }
+        
+        package "outport" {
+            interface IAuthProvider
+        }
+        
+        package "service" {
+            class AuthServiceImpl
+        }
+    }
+}
+
+package "member-infra" {
+    package "dto" {
+        class MemberInfoDTO
+        class JwtTokenDTO
+        class LoginRequestDTO
+        class SignupRequestDTO
+    }
+    
+    package "out" {
+        package "adapter" {
+            class AuthProviderImpl
+        }
+        
+        package "entity" {
+            class MemberEntity
+            class AccountEntity
+        }
+        
+        package "repo" {
+            interface IMemberRepository
+            interface IAccountRepository
+        }
+    }
+    
+    package "in" {
+        package "web" {
+            class MemberController
+            class AuthController
+            class AuthControllerHelper
+            class MemberControllerHelper
+        }
+    }
+}
+
+MemberController ..> IAuthService
+AuthController ..> IAuthService
+AuthControllerHelper ..> IMemberRepository
+AuthControllerHelper ..> IAccountRepository
+MemberControllerHelper ..> IMemberRepository
+AuthServiceImpl .up.> IAuthProvider
+AuthProviderImpl .up.|> IAuthProvider
+AuthProviderImpl ..> IMemberRepository
+AuthProviderImpl ..> IAccountRepository
+@enduml
+
+
+

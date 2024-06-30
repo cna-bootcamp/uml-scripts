@@ -1,0 +1,331 @@
+@startuml
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v15.0/dist
+!includeurl AWSPUML/AWSCommon.puml
+!includeurl AWSPUML/ApplicationIntegration/APIGateway.puml
+!includeurl AWSPUML/SecurityIdentityCompliance/Cognito.puml
+
+actor Client
+participant APIGateway << APIGateway >>
+participant "회원 서비스" as MemberService
+participant "구독추천 서비스" as RecommendationService
+participant "마이구독 서비스" as MySubscriptionService
+participant "마이그룹 서비스" as MyGroupService
+participant "이체조회 서비스" as TransactionService
+
+Client -> APIGateway: 요청
+
+' 회원 서비스 API
+APIGateway -> MemberService: 회원가입
+APIGateway -> MemberService: 로그인
+APIGateway -> MemberService: 인증 토큰 검증
+APIGateway -> MemberService: 인증 토큰 갱신
+APIGateway -> MemberService: 특정 사용자 정보 조회
+APIGateway -> MemberService: 전체 사용자 정보 조회
+APIGateway -> MemberService: 로그아웃
+
+' 구독추천 서비스 API
+APIGateway -> RecommendationService: 추천 구독 카테고리 조회
+APIGateway -> RecommendationService: 추천 서비스 목록 조회
+APIGateway -> RecommendationService: 지출 정보 조회
+APIGateway -> RecommendationService: 구독 카테고리 목록 조회
+APIGateway -> RecommendationService: 구독 서비스 상세 조회
+APIGateway -> RecommendationService: 구독 신청
+
+' 마이구독 서비스 API
+APIGateway -> MySubscriptionService: 구독 요약 목록 조회
+APIGateway -> MySubscriptionService: 총 구독료 조회
+APIGateway -> MySubscriptionService: 최대 절감액 조회
+APIGateway -> MySubscriptionService: 구독 목록 조회
+APIGateway -> MySubscriptionService: 구독 상세 정보 조회
+APIGateway -> MySubscriptionService: 구독 취소
+MySubscriptionService -> RecommendationService: 구독 서비스 정보 요청
+MySubscriptionService -> MyGroupService: 구독 서비스 관련 그룹 확인
+
+' 마이그룹 서비스 API
+APIGateway -> MyGroupService: 총 구독료 조회
+APIGateway -> MyGroupService: 총 최대 절감액 조회
+APIGateway -> MyGroupService: 썹 요약 목록 조회
+APIGateway -> MyGroupService: 썹 전체 목록 조회
+APIGateway -> MyGroupService: 썹 상세 정보 조회
+APIGateway -> MyGroupService: 썹 생성
+APIGateway -> MyGroupService: 썹 참여
+APIGateway -> MyGroupService: 썹 참여 취소
+APIGateway -> MyGroupService: 이체 내역 조회
+MyGroupService -> RecommendationService: 구독 서비스 정보 요청
+MyGroupService -> MySubscriptionService: 사용자 구독 서비스 정보 요청
+
+' 이체조회 서비스 API
+APIGateway -> TransactionService: 이체내역 조회
+
+@enduml
+
+@startuml
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v15.0/dist
+!includeurl AWSPUML/AWSCommon.puml
+!includeurl AWSPUML/ApplicationIntegration/APIGateway.puml
+!includeurl AWSPUML/SecurityIdentityCompliance/Cognito.puml
+
+actor Client
+participant APIGateway << APIGateway >>
+participant "회원 서비스" as MemberService
+participant "회원 컨트롤러" as MemberController
+participant "인증 서비스" as AuthService
+participant "회원 저장소" as MemberRepository
+participant "토큰 서비스" as TokenService
+database "회원 DB" as MemberDB
+
+Client -> APIGateway: 요청
+
+' 회원가입 API
+APIGateway -> MemberController: POST /api/auth/signup
+activate MemberController
+MemberController -> AuthService: 회원 정보 유효성 검사
+AuthService -> MemberRepository: 중복 회원 확인
+MemberRepository -> MemberDB: 회원 정보 조회
+MemberController -> AuthService: 비밀번호 암호화
+MemberController -> MemberRepository: 회원 정보 저장
+MemberRepository -> MemberDB: 회원 정보 저장
+deactivate MemberController
+
+' 로그인 API
+APIGateway -> MemberController: POST /api/auth/login
+activate MemberController
+MemberController -> AuthService: 로그인 정보 검증
+AuthService -> MemberRepository: 회원 정보 조회
+MemberRepository -> MemberDB: 회원 정보 조회
+AuthService -> AuthService: 비밀번호 검증
+MemberController -> TokenService: 인증 토큰 생성
+deactivate MemberController
+
+' 인증 토큰 검증 API
+APIGateway -> MemberController: POST /api/auth/verify
+activate MemberController
+MemberController -> TokenService: 토큰 유효성 검증
+deactivate MemberController
+
+' 인증 토큰 갱신 API
+APIGateway -> MemberController: POST /api/auth/refresh
+activate MemberController
+MemberController -> TokenService: 리프레시 토큰 검증
+MemberController -> TokenService: 새 인증 토큰 생성
+deactivate MemberController
+
+' 특정 사용자 정보 조회 API
+APIGateway -> MemberController: GET /api/users/{userId}
+activate MemberController
+MemberController -> MemberRepository: 사용자 정보 조회
+MemberRepository -> MemberDB: 사용자 정보 조회
+deactivate MemberController
+
+' 전체 사용자 정보 조회 API
+APIGateway -> MemberController: GET /api/users
+activate MemberController
+MemberController -> MemberRepository: 전체 사용자 정보 조회
+MemberRepository -> MemberDB: 전체 사용자 정보 조회
+deactivate MemberController
+
+' 로그아웃 API
+APIGateway -> MemberController: POST /api/auth/logout
+activate MemberController
+MemberController -> TokenService: 토큰 무효화
+deactivate MemberController
+
+@enduml
+
+@startuml
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v15.0/dist
+!includeurl AWSPUML/AWSCommon.puml
+!includeurl AWSPUML/ApplicationIntegration/APIGateway.puml
+
+actor Client
+participant APIGateway << APIGateway >>
+participant "마이구독 서비스" as MySubscriptionService
+participant "구독 컨트롤러" as SubscriptionController
+participant "구독 서비스" as SubscriptionService
+participant "구독 저장소" as SubscriptionRepository
+database "구독 DB" as SubscriptionDB
+participant "구독추천 서비스" as RecommendationService
+participant "마이그룹 서비스" as MyGroupService
+
+Client -> APIGateway: 요청
+
+' 구독 요약 목록 조회 API
+APIGateway -> SubscriptionController: GET /api/users/{userId}/subscriptions/summary
+activate SubscriptionController
+SubscriptionController -> SubscriptionService: 사용자 구독 요약 조회
+SubscriptionService -> SubscriptionRepository: 구독 정보 조회
+SubscriptionRepository -> SubscriptionDB: 구독 데이터 조회
+deactivate SubscriptionController
+
+' 총 구독료 조회 API
+APIGateway -> SubscriptionController: GET /api/users/{userId}/subscriptions/total-fee
+activate SubscriptionController
+SubscriptionController -> SubscriptionService: 총 구독료 계산
+SubscriptionService -> SubscriptionRepository: 사용자 구독 정보 조회
+SubscriptionRepository -> SubscriptionDB: 구독 데이터 조회
+deactivate SubscriptionController
+
+' 최대 절감액 조회 API
+APIGateway -> SubscriptionController: GET /api/users/{userId}/subscriptions/max-savings
+activate SubscriptionController
+SubscriptionController -> SubscriptionService: 최대 절감액 계산
+SubscriptionService -> SubscriptionRepository: 사용자 구독 정보 조회
+SubscriptionRepository -> SubscriptionDB: 구독 데이터 조회
+deactivate SubscriptionController
+
+' 구독 목록 조회 API
+APIGateway -> SubscriptionController: GET /api/users/{userId}/subscriptions
+activate SubscriptionController
+SubscriptionController -> SubscriptionService: 사용자 구독 목록 조회
+SubscriptionService -> SubscriptionRepository: 구독 정보 조회
+SubscriptionRepository -> SubscriptionDB: 구독 데이터 조회
+deactivate SubscriptionController
+
+' 구독 상세 정보 조회 API
+APIGateway -> SubscriptionController: GET /api/subscriptions/{subscriptionId}
+activate SubscriptionController
+SubscriptionController -> SubscriptionService: 구독 상세 정보 조회
+SubscriptionService -> SubscriptionRepository: 구독 정보 조회
+SubscriptionRepository -> SubscriptionDB: 구독 데이터 조회
+SubscriptionService -> RecommendationService: 구독 서비스 상세 정보 요청
+deactivate SubscriptionController
+
+' 구독 취소 API
+APIGateway -> SubscriptionController: DELETE /api/users/{userId}/subscriptions/{subscriptionId}
+activate SubscriptionController
+SubscriptionController -> SubscriptionService: 구독 취소 처리
+SubscriptionService -> SubscriptionRepository: 구독 정보 삭제
+SubscriptionRepository -> SubscriptionDB: 구독 데이터 삭제
+SubscriptionService -> MyGroupService: 관련 구독그룹 확인 요청
+deactivate SubscriptionController
+
+@enduml
+
+@startuml
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v15.0/dist
+!includeurl AWSPUML/AWSCommon.puml
+!includeurl AWSPUML/ApplicationIntegration/APIGateway.puml
+
+actor Client
+participant APIGateway << APIGateway >>
+participant "마이그룹 서비스" as MyGroupService
+participant "그룹 컨트롤러" as GroupController
+participant "그룹 서비스" as GroupService
+participant "그룹 저장소" as GroupRepository
+database "그룹 DB" as GroupDB
+participant "구독추천 서비스" as RecommendationService
+participant "마이구독 서비스" as MySubscriptionService
+participant "이체조회 서비스" as TransactionService
+
+Client -> APIGateway: 요청
+
+' 총 구독료 조회 API
+APIGateway -> GroupController: GET /api/users/{userId}/total-subscription-fee
+activate GroupController
+GroupController -> GroupService: 총 구독료 계산
+GroupService -> GroupRepository: 사용자 그룹 정보 조회
+GroupRepository -> GroupDB: 그룹 데이터 조회
+GroupService -> MySubscriptionService: 사용자 구독 정보 요청
+deactivate GroupController
+
+' 총 최대 절감액 조회 API
+APIGateway -> GroupController: GET /api/users/{userId}/max-savings
+activate GroupController
+GroupController -> GroupService: 최대 절감액 계산
+GroupService -> GroupRepository: 사용자 그룹 정보 조회
+GroupRepository -> GroupDB: 그룹 데이터 조회
+GroupService -> MySubscriptionService: 사용자 구독 정보 요청
+deactivate GroupController
+
+' 썹 요약 목록 조회 API
+APIGateway -> GroupController: GET /api/users/{userId}/ssups/summary
+activate GroupController
+GroupController -> GroupService: 썹 요약 목록 조회
+GroupService -> GroupRepository: 사용자 그룹 정보 조회
+GroupRepository -> GroupDB: 그룹 데이터 조회
+deactivate GroupController
+
+' 썹 전체 목록 조회 API
+APIGateway -> GroupController: GET /api/users/{userId}/ssups
+activate GroupController
+GroupController -> GroupService: 썹 전체 목록 조회
+GroupService -> GroupRepository: 사용자 그룹 정보 조회
+GroupRepository -> GroupDB: 그룹 데이터 조회
+deactivate GroupController
+
+' 썹 상세 정보 조회 API
+APIGateway -> GroupController: GET /api/ssups/{ssupId}
+activate GroupController
+GroupController -> GroupService: 썹 상세 정보 조회
+GroupService -> GroupRepository: 그룹 정보 조회
+GroupRepository -> GroupDB: 그룹 데이터 조회
+GroupService -> RecommendationService: 구독 서비스 정보 요청
+deactivate GroupController
+
+' 썹 생성 API
+APIGateway -> GroupController: POST /api/ssups
+activate GroupController
+GroupController -> GroupService: 썹 생성
+GroupService -> RecommendationService: 구독 서비스 정보 요청
+GroupService -> GroupRepository: 그룹 정보 저장
+GroupRepository -> GroupDB: 그룹 데이터 저장
+deactivate GroupController
+
+' 썹 참여 API
+APIGateway -> GroupController: POST /api/ssups/join
+activate GroupController
+GroupController -> GroupService: 썹 참여 처리
+GroupService -> GroupRepository: 그룹 정보 업데이트
+GroupRepository -> GroupDB: 그룹 데이터 업데이트
+deactivate GroupController
+
+' 썹 참여 취소 API
+APIGateway -> GroupController: DELETE /api/users/{userId}/ssups/{ssupId}
+activate GroupController
+GroupController -> GroupService: 썹 참여 취소 처리
+GroupService -> GroupRepository: 그룹 정보 업데이트
+GroupRepository -> GroupDB: 그룹 데이터 업데이트
+deactivate GroupController
+
+' 이체 내역 조회 API
+APIGateway -> GroupController: GET /api/ssups/{ssupId}/transactions
+activate GroupController
+GroupController -> GroupService: 이체 내역 조회
+GroupService -> TransactionService: 이체 내역 요청
+deactivate GroupController
+
+@enduml
+
+@startuml
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v15.0/dist
+!includeurl AWSPUML/AWSCommon.puml
+!includeurl AWSPUML/ApplicationIntegration/APIGateway.puml
+
+actor Client
+participant APIGateway << APIGateway >>
+participant "이체내역 조회 서비스" as TransactionService
+participant "이체내역 컨트롤러" as TransactionController
+participant "이체내역 서비스" as TransactionLogicService
+participant "이체내역 저장소" as TransactionRepository
+database "이체내역 DB" as TransactionDB
+participant "마이그룹 서비스" as MyGroupService
+participant "회원 서비스" as MemberService
+
+Client -> APIGateway: 요청
+
+' 이체내역 조회 API
+APIGateway -> TransactionController: GET /api/ssups/{ssupId}/transactions
+activate TransactionController
+TransactionController -> TransactionLogicService: 이체내역 조회 요청
+TransactionLogicService -> MyGroupService: 썹 정보 및 권한 확인 요청
+TransactionLogicService -> TransactionRepository: 이체내역 조회
+TransactionRepository -> TransactionDB: 이체내역 데이터 조회
+TransactionLogicService -> TransactionLogicService: 조회 기간 필터링
+TransactionLogicService -> TransactionLogicService: 정렬 순서 적용
+TransactionLogicService -> MemberService: 멤버 정보 요청
+TransactionLogicService -> TransactionLogicService: 이체내역 가공 및 포맷팅
+deactivate TransactionController
+
+@enduml
+
+
