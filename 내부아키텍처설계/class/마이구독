@@ -1,56 +1,162 @@
 @startuml
-left to right direction
+skinparam classAttributeIconSize 0
 
-package "mysub-biz" {
-    package "domain" {
-        class MySub
+package MySubApplication {
+
+    package "biz.usecase" as biz_usecase {
+        package inport {
+            interface IMySubService {
+                +getTotalSubFee(userId: String): Long
+                +getMaxSavingAmount(userId: String): Long
+                +getMySubList(userId: String): List<MySubDTO>
+                +cancelSub(subId: Long): void
+                +subscribeSub(subId: Long, userId: String): void
+            }
+        }
+        package outport {
+            interface IMySubProvider {
+                +getTotalSubFee(userId: String): Long
+                +getMaxSavingAmount(userId: String): Long
+                +getMySubList(userId: String): List<MySub>
+                +cancelSub(subId: Long): void
+                +subscribeSub(subId: Long, userId: String): void
+            }
+        }
+        package service {
+            class MySubServiceImpl {
+                -mySubProvider: IMySubProvider
+                +getTotalSubFee(userId: String): Long
+                +getMaxSavingAmount(userId: String): Long
+                +getMySubList(userId: String): List<MySubDTO>
+                +cancelSub(subId: Long): void
+                +subscribeSub(subId: Long, userId: String): void
+            }
+        }
     }
-    
-    package "usecase" {
-        package "inport" {
-            interface IMySubService
+
+    biz_usecase.inport.IMySubService <|.. biz_usecase.service.MySubServiceImpl
+    biz_usecase.service.MySubServiceImpl --> biz_usecase.outport.IMySubProvider
+
+    package "biz.domain" as biz_domain {
+        class MySub {
+            -userId: String
+            -subId: Long
         }
-        
-        package "outport" {
-            interface IMySubProvider
+    }
+
+    package "biz.dto" as biz_dto {
+        class MySubDTO {
+            -userId: String
+            -subId: Long
         }
-        
-        package "service" {
-            class MySubServiceImpl
+    }
+
+    package "biz.exception" as biz_exception {
+        class BizException {
+            +BizException(message: String)
+            +BizException(message: String, cause: Throwable)
+        }
+    }
+
+    package "infra.in.web" as infra_in_web {
+        class MySubController {
+            -mySubService: IMySubService
+            -mySubControllerHelper: MySubControllerHelper
+            +getTotalSubFee(userId: String): ResponseEntity<ResponseDTO<Long>>
+            +getMaxSavingAmount(userId: String): ResponseEntity<ResponseDTO<Long>>
+            +getMySubList(userId: String): ResponseEntity<ResponseDTO<List<SubInfoDTO>>>
+            +cancelSub(subId: Long): ResponseEntity<ResponseDTO<Void>>
+            +subscribeSub(subId: Long): ResponseEntity<ResponseDTO<Void>>
+        }
+        class MySubControllerHelper {
+            -mySubRepository: IMySubRepository
+            +getSubInfoDTO(mySub: MySub): SubInfoDTO
+            +toSubInfoDTOList(mySubList: List<MySub>): List<SubInfoDTO>
+        }
+    }
+
+    infra_in_web.MySubController --> biz_usecase.inport.IMySubService
+    infra_in_web.MySubController --> infra_in_web.MySubControllerHelper
+    infra_in_web.MySubControllerHelper --> infra_out_repo.IMySubRepository
+
+    package "infra.out.repo" as infra_out_repo {
+        interface IMySubRepository {
+            +findByUserId(userId: String): List<MySubEntity>
+            +findById(subId: Long): Optional<MySubEntity>
+            +delete(mySubEntity: MySubEntity): void
+            +save(mySubEntity: MySubEntity): MySubEntity
+        }
+    }
+
+    package "infra.out.adapter" as infra_out_adapter {
+        class MySubProviderImpl {
+            -mySubRepository: IMySubRepository
+            +getTotalSubFee(userId: String): Long
+            +getMaxSavingAmount(userId: String): Long
+            +getMySubList(userId: String): List<MySub>
+            +cancelSub(subId: Long): void
+            +subscribeSub(subId: Long, userId: String): void
+        }
+    }
+
+    infra_out_adapter.MySubProviderImpl ..|> biz_usecase.outport.IMySubProvider
+    infra_out_adapter.MySubProviderImpl --> infra_out_repo.IMySubRepository
+
+    package "infra.out.entity" as infra_out_entity {
+        class MySubEntity {
+            -userId: String
+            -subId: Long
+            +toDomain(): MySub
+        }
+    }
+
+    infra_out_entity.MySubEntity ..> biz_domain.MySub
+
+    package "infra.common.jwt" as infra_common_jwt {
+        class JwtAuthenticationFilter {
+            -jwtTokenProvider: JwtTokenProvider
+            +doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain): void
+        }
+        class JwtTokenProvider {
+            -algorithm: Algorithm
+            +createToken(memberEntity: MemberEntity, authorities: Collection<? extends GrantedAuthority>): JwtTokenDTO
+            +validateToken(token: String): int
+            +getAuthentication(token: String): Authentication
+        }
+    }
+
+    package "infra.common.config" as infra_common_config {
+        class LoggingAspect {
+            +logMethodStart(joinPoint: JoinPoint): void
+            +logMethodEnd(joinPoint: JoinPoint, result: Object): void
+            +logMethodException(joinPoint: JoinPoint, exception: Exception): void
+        }
+        class SpringDocConfig {
+            +openAPI(): OpenAPI
+        }
+        class SecurityConfig {
+            -jwtTokenProvider: JwtTokenProvider
+            +securityFilterChain(http: HttpSecurity): SecurityFilterChain
+            +corsConfigurationSource(): CorsConfigurationSource
+        }
+    }
+
+    package "infra.dto" as infra_dto {
+        class SubInfoDTO {
+            -userId: String
+            -subId: Long
+        }
+    }
+
+    package "infra.exception" as infra_exception {
+        class InfraException {
+            -code: int
+            +InfraException(message: String)
+            +InfraException(message: String, cause: Throwable)
+            +InfraException(code: int, message: String)
+            +InfraException(code: int, message: String, cause: Throwable)
+            +getCode(): int
         }
     }
 }
-
-package "mysub-infra" {
-    package "dto" {
-        class MySubDTO
-    }
-    
-    package "out" {
-        package "adapter" {
-            class MySubProviderImpl
-        }
-        
-        package "entity" {
-            class MySubEntity
-        }
-        
-        package "repo" {
-            interface IMySubRepository
-        }
-    }
-    
-    package "in" {
-        package "web" {
-            class MySubController
-            class MySubControllerHelper
-        }
-    }
-}
-
-MySubController ..> IMySubService
-MySubControllerHelper ..> IMySubRepository
-MySubServiceImpl .up.> IMySubProvider
-MySubProviderImpl .up.|> IMySubProvider
-MySubProviderImpl ..> IMySubRepository
 @enduml

@@ -1,41 +1,82 @@
-API명|HTTP Method|URI|설명|요청 데이터 필드|Request DTO 이름|배열여부|구조|응답 데이터 필드|Response DTO 이름|배열여부|구조
-회원가입|POST|/api/auth/signup|새로운 회원 등록|userId,password,roles,userName,bankName,bankAccount|SignupRequestDTO|N|{ userId: string, password: string, roles: string[], userName: string, bankName: string, bankAccount: string }|||||
-로그인|POST|/api/auth/login|회원 로그인 및 인증 토큰 발급|userId,password|LoginRequestDTO|N|{ userId: string, password: string }|accessToken,refreshToken|JwtTokenDTO|N|{ accessToken: string, refreshToken: string }
-인증 토큰 검증|POST|/api/auth/verify|발급된 인증 토큰의 유효성 검증|token|||||isValid|boolean|N|
-인증 토큰 갱신|POST|/api/auth/refresh|리프레시 토큰을 이용한 인증 토큰 갱신|refreshToken|JwtTokenRefreshDTO|N|{ refreshToken: string }|accessToken,refreshToken|JwtTokenDTO|N|{ accessToken: string, refreshToken: string }
-특정 사용자 정보 조회|GET|/api/users/{userId}|특정 사용자의 상세 정보 조회|userId|||||userId,userName,bankName,bankAccount,profileImg,isActive|User|N|{ userId: string, userName: string, bankName: string, bankAccount: string, profileImg: string, isActive: number }
-전체 사용자 정보 조회|GET|/api/users|모든 사용자의 정보 조회||||||userId,userName,bankName,bankAccount,profileImg,isActive|User|Y|{ userId: string, userName: string, bankName: string, bankAccount: string, profileImg: string, isActive: number }
-로그아웃|POST|/api/auth/logout|사용자 로그아웃 처리|userId|||||success|boolean|N|
+@startuml
+' Hide the spot
+hide circle
 
-API명|HTTP Method|URI|설명|요청 데이터 필드|Request DTO 이름|배열여부|구조|응답 데이터 필드|Response DTO 이름|배열여부|구조
-추천 구독 카테고리 조회|GET|/api/recommendations/categories|사용자의 지출 내역 기반 추천 구독 카테고리 조회|userId|||||categoryName,imageUrl,baseDate|RecommendedCategoryDTO|N|{ categoryName: string, imageUrl: string, baseDate: string }
-추천 서비스 목록 조회|GET|/api/recommendations/services|추천 구독 서비스 목록 조회|userId,category|||||services|RecommendedServiceDTO|Y|{ logo: string, name: string, description: string, price: number }
-지출 정보 조회|GET|/api/users/{userId}/expenses|사용자의 지출 카테고리 및 총 지출액 조회|userId|||||topCategory,totalExpense|ExpenseInfoDTO|N|{ topCategory: string, totalExpense: number }
-구독 카테고리 목록 조회|GET|/api/subscriptions/categories|전체 구독 카테고리 목록 조회||||||categories|CategoryDTO|Y|{ name: string, description: string }
-구독 서비스 상세 조회|GET|/api/subscriptions/{serviceId}|특정 구독 서비스의 상세 정보 조회|serviceId|||||logo,name,category,description,price,maxSharedUsers|SubscriptionDetailDTO|N|{ logo: string, name: string, category: string, description: string, price: number, maxSharedUsers: number }
-구독 신청|POST|/api/users/{userId}/subscriptions|사용자의 구독 서비스 신청|userId,serviceId|SubscriptionRequestDTO|N|{ serviceId: string }|success|boolean|N|
+' Avoid problems with angled crows feet
+skinparam linetype ortho
 
-API명|HTTP Method|URI|설명|요청 데이터 필드|Request DTO 이름|배열여부|구조|응답 데이터 필드|Response DTO 이름|배열여부|구조
-구독 요약 목록 조회|GET|/api/users/{userId}/subscriptions/summary|사용자의 구독 서비스 요약 목록 조회|userId|||||subscriptions|SubscriptionSummaryDTO|Y|{ logo: string, serviceName: string }
-총 구독료 조회|GET|/api/users/{userId}/subscriptions/total-fee|사용자의 총 구독료 조회|userId|||||totalFee|number|N|
-최대 절감액 조회|GET|/api/users/{userId}/subscriptions/max-savings|사용자의 최대 절감 가능 금액 조회|userId|||||maxSavings|number|N|
-구독 목록 조회|GET|/api/users/{userId}/subscriptions|사용자의 구독 서비스 상세 목록 조회|userId|||||subscriptions|SubscriptionDetailDTO|Y|{ logo: string, serviceName: string, fee: number, maxSharedUsers: number, isShared: boolean }
-구독 상세 정보 조회|GET|/api/subscriptions/{subscriptionId}|특정 구독 서비스의 상세 정보 조회|subscriptionId|||||logo,serviceName,category,description,fee,maxSharedUsers|SubscriptionInfoDTO|N|{ logo: string, serviceName: string, category: string, description: string, fee: number, maxSharedUsers: number }
-구독 취소|DELETE|/api/users/{userId}/subscriptions/{subscriptionId}|사용자의 특정 구독 서비스 취소|userId,subscriptionId|||||success|boolean|N|
+entity "members" as members {
+    *userId : string <<PK>>
+    --
+    userName : string
+    bankName : string
+    bankAccount : string
+    characterId : int
+}
 
-API명|HTTP Method|URI|설명|요청 데이터 필드|Request DTO 이름|배열여부|구조|응답 데이터 필드|Response DTO 이름|배열여부|구조
-총 구독료 조회|GET|/api/users/{userId}/total-subscription-fee|사용자의 총 구독료 조회|userId|||||totalFee,rangeImage|TotalFeeDTO|N|{ totalFee: number, rangeImage: string }
-총 최대 절감액 조회|GET|/api/users/{userId}/max-savings|사용자의 총 최대 절감액 조회|userId|||||maxSavings|number|N|
-썹 요약 목록 조회|GET|/api/users/{userId}/ssups/summary|사용자의 썹 요약 목록 조회|userId|||||ssups|SsupSummaryDTO|Y|{ logo: string, ssupName: string }
-썹 전체 목록 조회|GET|/api/users/{userId}/ssups|사용자의 썹 전체 목록 조회|userId|||||ssups|SsupDetailDTO|Y|{ logo: string, ssupName: string, savings: number }
-썹 상세 정보 조회|GET|/api/ssups/{ssupId}|특정 썹의 상세 정보 조회|ssupId|||||ssupInfo,members|SsupInfoDTO|N|{ ssupName: string, serviceLogo: string, serviceName: string, serviceDescription: string, paymentDate: number, feePerMember: number, members: MemberDTO[], availableSlots: number }
-썹 생성|POST|/api/ssups|새로운 썹 생성|ssupName,serviceId,representativeAccount,paymentDate|CreateSsupDTO|N|{ ssupName: string, serviceId: string, representativeAccount: string, paymentDate: number }|ssupId,inviteCode|SsupCreationResultDTO|N|{ ssupId: string, inviteCode: string }
-썹 참여|POST|/api/ssups/join|초대 코드를 통한 썹 참여|userId,inviteCode|JoinSsupDTO|N|{ userId: string, inviteCode: string }|success|boolean|N|
-썹 참여 취소|DELETE|/api/users/{userId}/ssups/{ssupId}|사용자의 특정 썹 참여 취소|userId,ssupId|||||success|boolean|N|
-이체 내역 조회|GET|/api/ssups/{ssupId}/transactions|특정 썹의 이체 내역 조회|ssupId,period|||||transactions|TransactionDTO|Y|{ date: string, amount: number, status: string, memberName: string }
+entity "accounts" as accounts {
+    *userId : string <<PK>>
+    --
+    password : string
+}
 
-API명|HTTP Method|URI|설명|요청 데이터 필드|Request DTO 이름|배열여부|구조|응답 데이터 필드|Response DTO 이름|배열여부|구조
-이체내역 조회|GET|/api/ssups/{ssupId}/transactions|특정 썹의 이체내역 조회|ssupId,period,sortOrder|||||transactions|TransactionDTO|Y|{ date: string, amount: number, status: string, memberName: string }
+entity "account_roles" as account_roles {
+    *userId : string <<FK>>
+    *role : string
+}
 
+entity "categories" as categories {
+    *id : long <<PK>>
+    --
+    categoryId : string
+    categoryName : string
+    spendingCategory : string
+}
 
+entity "subs" as subs {
+    *id : long <<PK>>
+    --
+    name : string
+    description : string
+    category_id : long <<FK>>
+    fee : long
+    maxShareNum : int
+    logo : string
+}
 
+entity "spending" as spending {
+    *id : long <<PK>>
+    --
+    userId : string
+    category : string
+    amount : long
+}
+
+entity "my_sub" as my_sub {
+    *id : long <<PK>>
+    --
+    userId : string
+    subId : long
+}
+
+entity "subgroup" as subgroup {
+    *groupId : long <<PK>>
+    --
+    groupName : string
+    subId : long
+    leaderId : string
+    bankName : string
+    bankAccount : string
+    paymentDay : int
+    inviteCode : string
+}
+
+entity "subgroup_member" as subgroup_member {
+    *group_id : long <<FK>>
+    *member_id : string
+}
+
+accounts ||--o{ account_roles
+categories ||--|{ subs
+subgroup ||--o{ subgroup_member
+@enduml

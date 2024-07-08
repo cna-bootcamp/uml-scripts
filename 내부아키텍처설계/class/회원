@@ -1,68 +1,170 @@
 @startuml
-left to right direction
+skinparam classAttributeIconSize 0
 
-package "member-biz" {
-    package "domain" {
-        class Member
-        class Account
+package member {
+    package biz {
+        package usecase {
+            package inport {
+                interface IAuthService {
+                    +signup(member: Member, account: Account): void
+                    +login(userId: String, password: String): Member
+                    +validateMemberAccess(member: Member): boolean
+                }
+            }
+            
+            package outport {
+                interface IAuthProvider {
+                    +validateAuth(userId: String, password: String): Member
+                    +signup(member: Member, account: Account): void
+                }
+            }
+            
+            package service {
+                class AuthServiceImpl {
+                    +login(userId: String, password: String): Member
+                    +signup(member: Member, account: Account): void
+                    +validateMemberAccess(member: Member): boolean
+                }
+            }
+        }
+        
+        package domain {
+            class Account {
+                -userId: String
+                -password: String
+                -roles: Set<String>
+            }
+            
+            class Member {
+                -userId: String
+                -userName: String
+                -bankName: String
+                -bankAccount: String
+                -characterId: int
+                +canbeAccessed(): boolean
+            }
+        }
+        
+        package exception {
+            class BizException {
+            }
+        }
     }
     
-    package "usecase" {
-        package "inport" {
-            interface IAuthService
+    package infra {
+        package "`in`" {
+            package web {
+                class AuthController {
+                    +signup(signupRequestDTO: SignupRequestDTO): ResponseEntity<ResponseDTO<String>>
+                    +login(loginRequestDTO: LoginRequestDTO): ResponseEntity<ResponseDTO<JwtTokenDTO>>
+                    +validate(jwtTokenVarifyDTO: JwtTokenVarifyDTO): ResponseEntity<ResponseDTO<Integer>>
+                    +refresh(jwtTokenRefreshDTO: JwtTokenRefreshDTO): ResponseEntity<ResponseDTO<JwtTokenDTO>>
+                }
+                
+                class AuthControllerHelper {
+                    +createToken(member: Member): JwtTokenDTO
+                    +checkAccessToken(token: String): int
+                    +isValidRefreshToken(token: String): boolean
+                    +getMemberFromRequest(signupRequestDTO: SignupRequestDTO): Member
+                    +getAccountFromRequest(signupRequestDTO: SignupRequestDTO): Account
+                    +getMemberFromToken(token: String): Member
+                }
+                
+                class MemberController {
+                    +getMemberInfo(userId: String): ResponseEntity<ResponseDTO<MemberInfoDTO>>
+                    +getUserInfoList(userIds: String): ResponseEntity<ResponseDTO<List<MemberInfoDTO>>>
+                }
+                
+                class MemberControllerHelper {
+                    +getMemberInfo(userId: String): MemberInfoDTO
+                    +getMemberInfoList(userIdList: List<String>): List<MemberInfoDTO>
+                }
+            }
         }
         
-        package "outport" {
-            interface IAuthProvider
+        package out {
+            package repo {
+                interface IAccountRepository {
+                    +findByUserId(userId: String): Optional<AccountEntity>
+                    +existsByUserId(userId: String): Boolean
+                }
+                
+                interface IMemberRepository {
+                    +findByUserId(userId: String): Optional<MemberEntity>
+                    +findByUserIdIn(userIdList: List<String>): List<MemberEntity>
+                }
+            }
+            
+            package adapter {
+                class AuthProviderImpl {
+                    +validateAuth(userId: String, password: String): Member
+                    +signup(member: Member, account: Account): void
+                }
+            }
+            
+            package entity {
+                class AccountEntity {
+                    -userId: String
+                    -password: String
+                    -roles: Set<String>
+                    +{static} fromDomain(account: Account): AccountEntity
+                    +toDomain(): Account
+                }
+                
+                class MemberEntity {
+                    -userId: String
+                    -userName: String
+                    -bankName: String
+                    -bankAccount: String
+                    -characterId: int
+                    +{static} fromDomain(member: Member): MemberEntity
+                    +toDomain(): Member
+                }
+            }
         }
         
-        package "service" {
-            class AuthServiceImpl
+        package exception {
+            class InfraException {
+            }
+        }
+        
+        package common {
+            package config {
+                class SecurityConfig
+                class WebConfig
+                class LoggingAspect
+                class SpringDocConfig
+                class JwtAuthenticationFilter
+            }
+            
+            package jwt {
+                class JwtTokenProvider
+                class CustomUserDetailsService
+            }
+            
+            package dto {
+                class MemberInfoDTO
+                class JwtTokenVarifyDTO
+                class JwtTokenDTO
+                class JwtTokenRefreshDTO
+                class LoginRequestDTO
+                class SignupRequestDTO
+            }
         }
     }
 }
 
-package "member-infra" {
-    package "dto" {
-        class MemberInfoDTO
-        class JwtTokenDTO
-        class LoginRequestDTO
-        class SignupRequestDTO
-    }
-    
-    package "out" {
-        package "adapter" {
-            class AuthProviderImpl
-        }
-        
-        package "entity" {
-            class MemberEntity
-            class AccountEntity
-        }
-        
-        package "repo" {
-            interface IMemberRepository
-            interface IAccountRepository
-        }
-    }
-    
-    package "in" {
-        package "web" {
-            class MemberController
-            class AuthController
-            class AuthControllerHelper
-            class MemberControllerHelper
-        }
-    }
-}
+AuthServiceImpl ..> IAuthProvider
 
-MemberController ..> IAuthService
 AuthController ..> IAuthService
-AuthControllerHelper ..> IMemberRepository
-AuthControllerHelper ..> IAccountRepository
-MemberControllerHelper ..> IMemberRepository
-AuthServiceImpl .up.> IAuthProvider
-AuthProviderImpl .up.|> IAuthProvider
-AuthProviderImpl ..> IMemberRepository
-AuthProviderImpl ..> IAccountRepository
+AuthController ..> AuthControllerHelper
+MemberController ..> MemberControllerHelper
+
+AuthProviderImpl .up.> IAccountRepository
+AuthProviderImpl .up.> IMemberRepository
+
+MemberControllerHelper .up.> IMemberRepository
+
+AccountEntity .up.> Account
+MemberEntity .up.> Member
 @enduml

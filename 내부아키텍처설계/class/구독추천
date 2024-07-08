@@ -1,64 +1,661 @@
 @startuml
-left to right direction
+skinparam classAttributeIconSize 0
 
-package "subrecommend-biz" {
-    package "domain" {
-        class Category
-        class Sub
+package SubRecommend {
+    package biz {
+        package usecase {
+            package inport {
+                interface ISubRecommendService {
+                    +getRecommendCategoryBySpending(userId: String): CategoryInfo
+                    +getRecommendSubListByCategory(category: String): List<SubInfo>
+                }
+            }
+            
+            package outport {
+                interface ISubRecommendProvider {
+                    +getSpendingByCategory(userId: String): Map<String, Long>
+                    +getSubListByCategory(category: String): List<Sub>
+                }
+            }
+            
+            package service {
+                class SubRecommendServiceImpl {
+                    +getRecommendCategoryBySpending(userId: String): CategoryInfo
+                    +getRecommendSubListByCategory(category: String): List<SubInfo>
+                }
+            }
+        }
+        
+        package domain {
+            class Sub {
+                -id: Long
+                -name: String
+                -description: String
+                -category: String
+                -fee: Long
+                -maxShareNum: int                
+            }
+            
+            class CategoryInfo {
+                -category: String
+                -totalSpending: Long
+            }
+            
+            class SubInfo {
+                -id: Long
+                -name: String
+                -description: String
+                -fee: Long
+                -maxShareNum: int  
+            }
+        }
+        
+        package exception {
+            class BizException {
+            }
+        }
     }
     
-    package "usecase" {
-        package "inport" {
-            interface ISubRecommendService
+    package infra {
+        package "`in`" {
+            package web {
+                class SubRecommendController {
+                    +getRecommendCategory(userId: String): ResponseEntity<ResponseDTO<CategoryDTO>>
+                    +moveToSubList(category: String): ResponseEntity<ResponseDTO<Void>>
+                    +getRecommendSubList(category: String): ResponseEntity<ResponseDTO<List<SubDTO>>>
+                    +getSubDetail(subId: Long): ResponseEntity<ResponseDTO<SubDTO>>
+                    +subscribeSub(subId: Long): ResponseEntity<ResponseDTO<Void>>
+                }
+                
+                class SubRecommendControllerHelper {
+                    +getRecommendCategory(userId: String): CategoryDTO
+                    +getRecommendSubList(category: String): List<SubDTO>
+                    +getSubDetail(subId: Long): SubDTO
+                }
+            }
         }
         
-        package "outport" {
-            interface ISubRecommendProvider
+        package out {
+            package repo {
+                interface ISubRepository {
+                    +findByCategoryOrderByName(category: String): List<SubEntity>
+                    +findById(subId: Long): Optional<SubEntity>
+                }
+                
+                interface ISpendingRepository {
+                    +getSpendingByCategory(userId: String): Map<String, Long>  
+                }
+            }
+            
+            package adapter {
+                class SubRecommendProviderImpl {
+                    +getSpendingByCategory(userId: String): Map<String, Long>
+                    +getSubListByCategory(category: String): List<Sub>
+                }
+            }
+            
+            package entity {
+                class SubEntity {
+                    -id: Long
+                    -name: String
+                    -description: String
+                    -category: String
+                    -fee: Long  
+                    -maxShareNum: int
+                    +toDomain(): Sub
+                }
+            }
         }
         
-        package "service" {
-            class SubRecommendServiceImpl
+        package exception {
+            class InfraException {
+            }
+        }
+        
+        package common {
+            package dto {
+                class CategoryDTO {
+                    -category: String
+                    -totalSpending: Long
+                }
+                
+                class SubDTO {
+                    -id: Long
+                    -name: String
+                    -description: String  
+                    -fee: Long
+                    -maxShareNum: int
+                }
+            }
         }
     }
 }
 
-package "subrecommend-infra" {
-    package "dto" {
-        class SubInfoDTO
-        class CategoryInfoDTO
-    }
-    
-    package "out" {
-        package "adapter" {
-            class SubRecommendProviderImpl
-        }
-        
-        package "entity" {
-            class SubEntity
-            class SpendingEntity
-            class CategoryEntity
-        }
-        
-        package "repo" {
-            interface ISubRepository
-            interface ISpendingRepository
-            interface ICategoryRepository
-        }
-    }
-    
-    package "in" {
-        package "web" {
-            class SubRecommendController
-            class SubRecommendControllerHelper
-        }
-    }
-}
+SubRecommendServiceImpl ..> ISubRecommendProvider
 
 SubRecommendController ..> ISubRecommendService
-SubRecommendControllerHelper ..> ISubRepository
-SubRecommendServiceImpl .up.> ISubRecommendProvider
-SubRecommendProviderImpl .up.|> ISubRecommendProvider
-SubRecommendProviderImpl ..> ISpendingRepository
-SubRecommendProviderImpl ..> ICategoryRepository
-SubRecommendProviderImpl ..> ISubRepository
+SubRecommendController ..> SubRecommendControllerHelper
+
+SubRecommendProviderImpl .up.> ISpendingRepository
+SubRecommendProviderImpl .up.> ISubRepository
+
+SubEntity .up.> Sub
+
 @enduml
+
+
+=====================
+SubRecommendController.moveToSubList의 목적은?
+
+SubRecommendController.moveToSubList 메서드의 주요 목적은 사용자가 선택한 구독 카테고리에 해당하는 구독 서비스 목록 화면으로 이동하는 것입니다.
+사용자가 메인화면에서 추천된 구독 카테고리를 선택하면, 해당 카테고리와 관련된 구독 서비스 목록을 보여주기 위해 moveToSubList 메서드가 호출됩니다. 이 메서드는 선택된 카테고리를 매개변수로 받아 해당 카테고리에 맞는 구독 서비스 목록 화면으로 리다이렉트합니다.
+예를 들어, 사용자가 "음악" 카테고리를 선택했다면 moveToSubList("음악")이 호출되고, 이에 따라 "음악" 카테고리에 해당하는 구독 서비스 목록 화면으로 이동하게 됩니다.
+이 메서드의 역할은 사용자의 선택에 따라 적절한 화면 전환을 수행하는 것으로, 사용자 경험을 향상시키고 구독 서비스 목록을 탐색할 수 있도록 돕습니다.
+
+---
+
+그렇다면 이건 불필요하잖아. 그건 화면에서 할 일이야. 일단 제외해야 한다는 것만 알고있어.
+클래스 재설계는 내가 필요할 때 부탁할께.
+다음으로 subscribeSub는 어떤 목적이고 어떤 유저스토리때문에 만든거지?
+
+제가 SubRecommendController.moveToSubList 메서드의 목적을 잘못 이해했네요. 말씀해 주신 대로 이 메서드는 화면에서 처리할 부분이므로 컨트롤러에서는 제외하는 것이 맞습니다. 피드백 감사드립니다.
+SubRecommendController.subscribeSub 메서드는 유저스토리 [RSS-035] "구독하기"를 구현하기 위해 만들어졌습니다.
+해당 유저스토리는 다음과 같이 정의되어 있습니다:
+
+구독하기: 사용자로서 | 나는, 소비 절감을 위해 | 구독 서비스를 구독하고 싶다.
+
+이 유저스토리의 수용 기준은 다음과 같습니다:
+
+구독 상세 화면에 진입한 상태에서 | 구독하기 콘트롤을 선택하면 | 나의 구독 서비스에 추가된다.
+
+토스트 메시지로 상단에 '구독이 완료 되었다'는 메시지가 표시되고, 자동으로 사라지면서 나의 구독 서비스 목록 화면으로 이동
+
+
+따라서 subscribeSub 메서드는 사용자가 구독 상세 화면에서 '구독하기' 버튼을 클릭했을 때 호출되어, 해당 구독 서비스를 사용자의 구독 목록에 추가하는 역할을 합니다. 이 메서드는 구독 완료 후 성공 메시지를 반환하고, 프론트엔드에서는 이 응답을 받아 토스트 메시지를 표시하고 사용자의 구독 목록 화면으로 이동하게 됩니다.
+즉, subscribeSub 메서드는 사용자가 원하는 구독 서비스를 선택하고 구독할 수 있도록 하여, 소비 절감의 목적을 달성할 수 있게 돕는 역할을 합니다.
+
+---
+
+구독하기 유저스토리를 구독추천에 작성한 건 맞아. 근데 고민이 구독하기는 마이구독서비스에게 요청할거고 마이구독서비스 DB에 저장될텐데, 이 메소드를 구독추천에 만드는게 맞을까?
+
+말씀해 주신 내용을 고려해 보면, 구독하기 기능은 마이구독(MySub) 서비스에서 처리하는 것이 더 적절해 보입니다. 구독추천(SubRecommend) 서비스는 사용자의 구독 추천을 위한 기능에 초점을 맞추고, 실제 구독 처리는 마이구독 서비스에서 담당하는 것이 합리적일 것 같습니다.
+사용자가 구독 서비스를 선택하고 '구독하기' 버튼을 클릭하면, 구독추천 서비스의 API를 통해 마이구독 서비스로 구독 요청을 전달할 수 있습니다. 그러면 마이구독 서비스에서 해당 요청을 받아 사용자의 구독 목록에 추가하고, 필요한 데이터를 마이구독 서비스의 DB에 저장하게 됩니다.
+이렇게 함으로써 각 서비스의 역할과 책임을 명확히 구분할 수 있고, 서비스 간의 결합도를 낮출 수 있습니다. 구독추천 서비스는 사용자의 지출 내역을 분석하여 적절한 구독 서비스를 추천하는 역할에 집중하고, 마이구독 서비스는 사용자의 구독 관리와 관련된 기능을 담당하게 됩니다.
+따라서 SubRecommendController.subscribeSub 메서드는 구독추천 서비스에서 제외하고, 대신 마이구독 서비스에 MySubController.subscribeSub 메서드를 추가하는 것이 더 적절해 보입니다.
+피드백 주신 내용에 동의하며, 구독하기 기능을 마이구독 서비스로 이동시키는 것이 더 나은 설계 방향이라고 생각합니다. 좋은 지적 감사드립니다!
+
+---
+Controller에서는 ControllerHelper와 Service클래스만 참조하게 하고, ControllerHelper에서는 외부 프레임워크와 연동하는 처리를 하고 Service에서는 비즈니스 로직을 처리하려 해. 이런 생각에 대해 어떻게 생각해?
+
+Controller, ControllerHelper, Service 클래스 간의 역할과 책임을 분리하는 것은 매우 좋은 설계 방향이라고 생각합니다.
+
+Controller:
+
+클라이언트의 요청을 받아들이고, 요청에 대한 검증 및 권한 확인 등을 수행합니다.
+요청 처리를 위해 필요한 데이터를 ControllerHelper나 Service 클래스에 전달하고, 처리 결과를 받아 클라이언트에게 응답을 반환합니다.
+Controller는 ControllerHelper와 Service 인터페이스에만 의존하도록 하여, 구현 클래스의 변경에 영향을 받지 않도록 합니다.
+
+
+ControllerHelper:
+
+Controller를 보조하는 역할로, 외부 프레임워크와의 연동, 데이터 변환, 유효성 검사 등의 작업을 처리합니다.
+예를 들어, 요청 데이터를 DTO로 변환하거나, JWT 토큰 생성 및 검증, 외부 API 호출 등의 작업을 수행할 수 있습니다.
+ControllerHelper는 Controller의 책임을 분리하고, 코드의 가독성과 유지보수성을 높이는 데 도움이 됩니다.
+
+
+Service:
+
+비즈니스 로직을 담당하며, 도메인 모델과 협력하여 애플리케이션의 핵심 기능을 구현합니다.
+Service는 트랜잭션 관리, 도메인 객체 간의 상호작용, 비즈니스 규칙 적용 등의 작업을 처리합니다.
+외부 인프라스트럭처에 대한 의존성을 최소화하고, 도메인 로직에 집중할 수 있도록 합니다.
+필요한 경우 인프라스트럭처 영역과의 통신을 위해 별도의 Adapter를 두어 격리시킬 수 있습니다.
+
+
+
+이러한 구조로 클래스 간의 책임을 명확히 분리함으로써 얻을 수 있는 이점은 다음과 같습니다:
+
+단일 책임 원칙(SRP) 준수: 각 클래스가 하나의 책임만 갖도록 하여 코드의 복잡성을 줄이고 유지보수성을 향상시킵니다.
+테스트 용이성: 각 클래스의 책임이 명확해지므로 단위 테스트를 작성하기 쉬워집니다.
+코드 재사용성: 공통된 로직을 ControllerHelper나 Service로 분리하여 재사용할 수 있습니다.
+변경의 영향 최소화: 클래스 간의 의존성을 인터페이스 수준으로 유지하여, 구현 클래스의 변경이 다른 클래스에 미치는 영향을 최소화할 수 있습니다.
+
+따라서 제안하신 방향대로 Controller, ControllerHelper, Service 간의 역할과 책임을 분리하는 것이 클린 아키텍처의 원칙에 부합하고, 유지보수성과 확장성이 높은 애플리케이션을 만드는 데 도움이 될 것입니다.
+
+---
+
+ISubRecommendProvider._getSpendingByCategory의 목적은 뭐고 어느 유저스토리를 위한 거지?
+
+ISubRecommendProvider.getSpendingByCategory의 목적은 사용자의 지출 내역을 카테고리별로 집계하여, 사용자의 소비 패턴을 파악하기 위한 것입니다. 이 메서드는 유저스토리 [RSS-015] "지출 카테고리 및 총 지출액"을 구현하기 위해 만들어졌습니다.
+해당 유저스토리는 다음과 같이 정의되어 있습니다:
+
+지출 카테고리 및 총 지출액: 사용자로서 | 나는, 소비가 많은 카테고리와 소비 규모를 인지하여 구독 서비스 이용 동기를 얻기 위해 | 지난 한달 최고 지출 카테고리와 소비 총액을 보고 싶다.
+
+이 유저스토리의 수용 기준은 다음과 같습니다:
+
+사용자가 추천 서비스 목록 콘트롤 선택 시 | 추천서비스 목록에 진입하면서 | 지난 한달 지출이 가장 많은 지출 카테고리와 총 지출액이 표시된다.
+
+총 지출액은 원화로 표시하고 3자리 마다 콤마 표시
+
+
+getSpendingByCategory 메서드는 사용자의 ID를 매개변수로 받아, 해당 사용자의 지난 한 달 동안의 지출 내역을 카테고리별로 집계합니다. 이를 통해 사용자가 어떤 카테고리에 가장 많은 돈을 쓰고 있는지 파악할 수 있습니다.
+집계된 지출 정보는 SubRecommendServiceImpl.getRecommendCategoryBySpending 메서드에서 사용되어, 사용자의 최고 지출 카테고리를 결정하는 데 활용됩니다. 이렇게 결정된 최고 지출 카테고리는 구독 서비스 추천에 반영되어, 사용자에게 가장 적합한 구독 서비스를 제안할 수 있게 됩니다.
+또한, 집계된 총 지출액은 사용자에게 제공되어, 사용자 자신의 소비 규모를 인지하고 구독 서비스 이용에 대한 동기를 부여하는 데 도움을 줄 수 있습니다.
+따라서 getSpendingByCategory 메서드는 사용자의 지출 패턴을 분석하고, 그에 따른 맞춤형 구독 서비스 추천을 제공하는 데 필수적인 역할을 합니다.
+
+---
+
+ISubRepository._findByCategoryOrderByName의 목적과 근거가 된 유저스토리는?
+
+ISubRepository.findByCategoryOrderByName의 목적은 특정 카테고리에 속하는 구독 서비스 목록을 서비스 이름 순으로 정렬하여 가져오기 위한 것입니다. 이 메서드는 유저스토리 [RSS-025] "구독서비스 목록"을 구현하기 위해 만들어졌습니다.
+해당 유저스토리는 다음과 같이 정의되어 있습니다:
+
+구독서비스 목록: 사용자로서 | 나는, 구독 서비스를 주제별로 나눠 보기 위해 | 구독 카테고리별로 구독 서비스를 보고 싶다.
+
+이 유저스토리의 수용 기준은 다음과 같습니다:
+
+추천 서비스 목록 화면에 진입한 상태에서 | 구독 카테고리를 선택하면 | 관련된 구독서비스 목록이 표시된다.
+
+구독서비스 로고, 서비스명, 설명, 구독료 표시
+서비스명, 설명이 길면 화면 사이즈에 맞게 내용 일부만 표시
+구독 서비스 선택 시 구독 상세 화면으로 이동
+
+
+findByCategoryOrderByName 메서드는 사용자가 선택한 구독 카테고리를 매개변수로 받아, 해당 카테고리에 속하는 구독 서비스 목록을 데이터베이스에서 조회합니다. 이때, 구독 서비스 목록은 서비스 이름을 기준으로 오름차순 정렬되어 반환됩니다.
+정렬된 구독 서비스 목록은 SubRecommendProviderImpl.getSubListByCategory 메서드에서 사용되어, 선택된 카테고리에 맞는 구독 서비스를 사용자에게 제공하는 데 활용됩니다.
+사용자는 추천 서비스 목록 화면에서 원하는 구독 카테고리를 선택하고, 해당 카테고리에 속하는 구독 서비스들을 서비스 이름 순으로 정렬된 목록으로 확인할 수 있습니다. 이를 통해 사용자는 관심 있는 주제의 구독 서비스를 쉽게 탐색하고 비교할 수 있게 됩니다.
+따라서 findByCategoryOrderByName 메서드는 사용자에게 구독 카테고리별로 정렬된 구독 서비스 목록을 제공함으로써, 사용자 경험을 향상시키고 구독 서비스 선택을 용이하게 하는 데 중요한 역할을 합니다.
+
+---
+
+domain의 Sub과 SubInfo를 합치지 않고 분리한 이유는?
+
+Sub과 SubInfo를 분리한 주된 이유는 도메인 모델과 응용 서비스 계층 간의 책임을 명확히 구분하기 위해서입니다. 이는 도메인 주도 설계(DDD)와 클린 아키텍처의 원칙을 따른 것으로 볼 수 있습니다.
+
+도메인 모델의 순수성 유지:
+
+Sub 클래스는 구독 서비스의 핵심 속성과 행동을 담고 있는 순수한 도메인 객체입니다.
+도메인 모델은 비즈니스 로직에 집중하고, 애플리케이션의 다른 계층과 독립적으로 유지되어야 합니다.
+도메인 모델에는 프레젠테이션 계층이나 인프라스트럭처 계층에 특화된 로직이나 데이터가 포함되어서는 안 됩니다.
+
+
+응용 서비스 계층의 명확한 역할 정의:
+
+SubInfo 클래스는 응용 서비스 계층에서 사용되는 DTO(Data Transfer Object)의 역할을 합니다.
+응용 서비스 계층은 도메인 모델과 인프라스트럭처 계층 사이에서 중개자 역할을 하며, 두 계층 간의 데이터를 변환하고 조율합니다.
+SubInfo는 도메인 객체인 Sub에서 필요한 속성을 선택적으로 가져와 응용 서비스 계층에서 사용하기 편리한 형태로 제공합니다.
+
+
+계층 간 의존성 관리:
+
+Sub과 SubInfo를 분리함으로써, 도메인 계층과 응용 서비스 계층 간의 의존성을 약화시킬 수 있습니다.
+도메인 계층의 변경이 응용 서비스 계층에 직접적인 영향을 미치지 않도록 하기 위해, 응용 서비스 계층에서는 도메인 객체를 직접 사용하는 대신 DTO를 사용합니다.
+이를 통해 도메인 모델의 변경이 응용 서비스 계층에 미치는 영향을 최소화하고, 계층 간의 결합도를 낮출 수 있습니다.
+
+
+확장성과 유연성 확보:
+
+도메인 모델과 DTO를 분리하면, 향후 애플리케이션의 요구사항 변경에 더 유연하게 대처할 수 있습니다.
+예를 들어, 응용 서비스 계층에서 필요한 데이터 형식이 변경되더라도, 도메인 모델은 그대로 유지할 수 있습니다. 대신 SubInfo의 구조만 변경하면 됩니다.
+반대로, 도메인 모델에 새로운 속성이나 기능이 추가되더라도, 응용 서비스 계층에서는 필요한 부분만 SubInfo에 반영하면 되므로, 영향 범위를 최소화할 수 있습니다.
+
+
+
+따라서 Sub과 SubInfo를 분리하는 것은 도메인 모델의 순수성을 유지하고, 응용 서비스 계층의 책임을 명확히 하며, 계층 간의 의존성을 관리하기 위한 설계 결정이라고 볼 수 있습니다. 이를 통해 애플리케이션의 유지보수성과 확장성을 향상시킬 수 있습니다.
+
+---
+
+SubInfo는 DTO의 역할이므로 'DTO'를 끝에 붙였으면 좋겠어. 그리고domain package에 있는게 좋을까 ? 아니면 별도의 'dto'패키지로 분리하는게 좋을까? 내 생각엔 별도의 dto 패키지를 만드는게 좋을 것 같은데. 분리하는게 좋아고 생각하면 package도 추천해줘
+
+네, 좋은 의견입니다. SubInfo를 SubInfoDTO로 명명하는 것이 클래스의 역할과 의도를 더 명확하게 표현할 수 있을 것 같습니다.
+도메인 객체와 DTO를 분리하여 별도의 패키지로 관리하는 것이 더 나은 선택이라고 생각합니다. 이렇게 하면 도메인 모델의 순수성을 유지하고, 패키지 구조를 통해 각 클래스의 역할과 책임을 명확히 구분할 수 있습니다.
+DTO를 위한 별도의 패키지를 만든다면, 아래와 같은 구조를 추천합니다:
+Copy codecom.subride.subrecommend
+  ├── biz
+  │   ├── usecase
+  │   │   ├── inport
+  │   │   ├── outport
+  │   │   └── service
+  │   ├── domain
+  │   │   └── Sub
+  │   └── dto
+  │       ├── CategoryInfoDTO
+  │       └── SubInfoDTO
+  ├── infra
+  │   ├── in
+  │   │   └── web
+  │   └── out
+  │       ├── repo
+  │       ├── adapter
+  │       └── entity
+  └── common
+      └── dto
+위 구조에서는 biz 패키지 내에 dto 패키지를 별도로 생성하여 DTO 클래스들을 관리합니다. 이 패키지에는 CategoryInfoDTO와 SubInfoDTO가 위치하게 됩니다.
+도메인 객체인 Sub는 domain 패키지에 그대로 유지됩니다.
+infra 패키지 내에서 사용되는 DTO 클래스들은 common 패키지 내의 dto 패키지에 위치시킬 수 있습니다. 이렇게 하면 인프라스트럭처 계층에서 사용되는 DTO와 비즈니스 계층에서 사용되는 DTO를 구분할 수 있습니다.
+이와 같은 패키지 구조를 사용하면 다음과 같은 이점이 있습니다:
+
+도메인 모델과 DTO의 명확한 분리
+패키지 구조를 통한 계층 간 역할과 책임 구분
+비즈니스 로직과 인프라스트럭처 로직의 분리
+코드의 가독성과 유지보수성 향상
+
+패키지 구조는 애플리케이션의 규모와 복잡성에 따라 달라질 수 있으므로, 팀 내에서 합의된 규칙을 따르는 것이 좋습니다. 제안된 구조를 기반으로 필요에 따라 조정하고 발전시켜 나가시면 될 것 같습니다.
+
+===== Version2 
+
+@startuml
+skinparam classAttributeIconSize 0
+
+package SubRecommend {
+    package biz {
+        package usecase {
+            package inport {
+                interface ISubRecommendService {
+                    +getRecommendCategoryBySpending(userId: String): CategoryInfoDTO
+                    +getRecommendSubListByCategory(category: String): List<SubInfoDTO>
+                }
+            }
+            
+            package outport {
+                interface ISubRecommendProvider {
+                    +getSpendingByCategory(userId: String): Map<String, Long>
+                    +getSubListByCategory(category: String): List<Sub>
+                }
+            }
+            
+            package service {
+                class SubRecommendServiceImpl {
+                    +getRecommendCategoryBySpending(userId: String): CategoryInfoDTO
+                    +getRecommendSubListByCategory(category: String): List<SubInfoDTO>
+                }
+            }
+        }
+        
+        package domain {
+            class Sub {
+                -id: Long
+                -name: String
+                -description: String
+                -category: String
+                -fee: Long
+                -maxShareNum: int                
+            }
+        }
+        
+        package dto {
+            class CategoryInfoDTO {
+                -category: String
+                -totalSpending: Long
+            }
+            
+            class SubInfoDTO {
+                -id: Long
+                -name: String
+                -description: String
+                -fee: Long
+                -maxShareNum: int  
+            }
+        }
+        
+        package exception {
+            class BizException {
+            }
+        }
+    }
+    
+    package infra {
+        package "`in`" {
+            package web {
+                class SubRecommendController {
+                    +getRecommendCategory(userId: String): ResponseEntity<ResponseDTO<CategoryDTO>>
+                    +getRecommendSubList(category: String): ResponseEntity<ResponseDTO<List<SubDTO>>>
+                    +getSubDetail(subId: Long): ResponseEntity<ResponseDTO<SubDTO>>
+                }
+                
+                class SubRecommendControllerHelper {
+                    +getRecommendCategory(userId: String): CategoryDTO
+                    +getRecommendSubList(category: String): List<SubDTO>
+                    +getSubDetail(subId: Long): SubDTO
+                }
+            }
+        }
+        
+        package out {
+            package repo {
+                interface ISubRepository {
+                    +findByCategoryOrderByName(category: String): List<SubEntity>
+                    +findById(subId: Long): Optional<SubEntity>
+                }
+                
+                interface ISpendingRepository {
+                    +getSpendingByCategory(userId: String): Map<String, Long>  
+                }
+            }
+            
+            package adapter {
+                class SubRecommendProviderImpl {
+                    +getSpendingByCategory(userId: String): Map<String, Long>
+                    +getSubListByCategory(category: String): List<Sub>
+                }
+            }
+            
+            package entity {
+                class SubEntity {
+                    -id: Long
+                    -name: String
+                    -description: String
+                    -category: String
+                    -fee: Long  
+                    -maxShareNum: int
+                    +toDomain(): Sub
+                }
+            }
+        }
+        
+        package exception {
+            class InfraException {
+            }
+        }
+        
+        package common {
+            package dto {
+                class CategoryDTO {
+                    -category: String
+                    -totalSpending: Long
+                }
+                
+                class SubDTO {
+                    -id: Long
+                    -name: String
+                    -description: String  
+                    -fee: Long
+                    -maxShareNum: int
+                }
+            }
+        }
+    }
+}
+
+SubRecommendServiceImpl ..> ISubRecommendProvider
+
+SubRecommendController ..> ISubRecommendService
+SubRecommendController ..> SubRecommendControllerHelper
+
+SubRecommendProviderImpl .up.> ISpendingRepository
+SubRecommendProviderImpl .up.> ISubRepository
+
+SubEntity .up.> Sub
+
+@enduml
+
+---
+
+구독카테고리도 DB로 관리하고 싶어. 구독카테고리에는 매핑된 지출카테고리 정보도 있어야 해.
+infra프로젝트의 dto는 infra.dto 밑에 두는걸로 바꿔줘
+
+======== Version 3
+
+@startuml
+skinparam classAttributeIconSize 0
+
+package SubRecommend {
+    package biz {
+        package usecase {
+            package inport {
+                interface ISubRecommendService {
+                    +getRecommendCategoryBySpending(userId: String): CategoryInfoDTO
+                    +getRecommendSubListByCategory(categoryId: Long): List<SubInfoDTO>
+                }
+            }
+            
+            package outport {
+                interface ISubRecommendProvider {
+                    +getSpendingByCategory(userId: String): Map<String, Long>
+                    +getCategoryBySpendingCategory(spendingCategory: String): Category
+                    +getSubListByCategoryId(categoryId: Long): List<Sub>
+                }
+            }
+            
+            package service {
+                class SubRecommendServiceImpl {
+                    +getRecommendCategoryBySpending(userId: String): CategoryInfoDTO
+                    +getRecommendSubListByCategory(categoryId: Long): List<SubInfoDTO>
+                }
+            }
+        }
+        
+        package domain {
+            class Category {
+                -id: Long
+                -name: String
+                -spendingCategory: String
+            }
+            
+            class Sub {
+                -id: Long
+                -name: String
+                -description: String
+                -category: Category
+                -fee: Long
+                -maxShareNum: int                
+            }
+        }
+        
+        package dto {
+            class CategoryInfoDTO {
+                -categoryId: Long
+                -categoryName: String
+                -totalSpending: Long
+            }
+            
+            class SubInfoDTO {
+                -id: Long
+                -name: String
+                -description: String
+                -fee: Long
+                -maxShareNum: int  
+            }
+        }
+        
+        package exception {
+            class BizException {
+            }
+        }
+    }
+    
+    package infra {
+        package "`in`" {
+            package web {
+                class SubRecommendController {
+                    +getRecommendCategory(userId: String): ResponseEntity<ResponseDTO<CategoryInfoDTO>>
+                    +getRecommendSubList(categoryId: Long): ResponseEntity<ResponseDTO<List<SubInfoDTO>>>
+                    +getSubDetail(subId: Long): ResponseEntity<ResponseDTO<SubInfoDTO>>
+                }
+                
+                class SubRecommendControllerHelper {
+                    +toSubInfoDTO(sub: Sub): SubInfoDTO
+                    +toSubInfoDTOList(subList: List<Sub>): List<SubInfoDTO>
+                }
+            }
+        }
+        
+        package out {
+            package repo {
+                interface ICategoryRepository {
+                    +findBySpendingCategory(spendingCategory: String): Optional<CategoryEntity>
+                }
+                
+                interface ISubRepository {
+                    +findByCategoryIdOrderByName(categoryId: Long): List<SubEntity>
+                    +findById(subId: Long): Optional<SubEntity>
+                }
+                
+                interface ISpendingRepository {
+                    +getSpendingByCategory(userId: String): Map<String, Long>  
+                }
+            }
+            
+            package adapter {
+                class SubRecommendProviderImpl {
+                    +getSpendingByCategory(userId: String): Map<String, Long>
+                    +getCategoryBySpendingCategory(spendingCategory: String): Category
+                    +getSubListByCategoryId(categoryId: Long): List<Sub>
+                }
+            }
+            
+            package entity {
+                class CategoryEntity {
+                    -id: Long
+                    -name: String
+                    -spendingCategory: String
+                    +toDomain(): Category
+                }
+                
+                class SubEntity {
+                    -id: Long
+                    -name: String
+                    -description: String
+                    -category: CategoryEntity
+                    -fee: Long  
+                    -maxShareNum: int
+                    +toDomain(): Sub
+                }
+            }
+        }
+        
+        package dto {
+            class CategoryDTO {
+                -id: Long
+                -name: String
+            }
+            
+            class SubDTO {
+                -id: Long
+                -name: String
+                -description: String  
+                -fee: Long
+                -maxShareNum: int
+            }
+        }
+        
+        package exception {
+            class InfraException {
+            }
+        }
+    }
+}
+
+SubRecommendServiceImpl ..> ISubRecommendProvider
+
+SubRecommendController ..> ISubRecommendService
+SubRecommendController ..> SubRecommendControllerHelper
+
+SubRecommendProviderImpl .up.> ICategoryRepository
+SubRecommendProviderImpl .up.> ISubRepository
+SubRecommendProviderImpl .up.> ISpendingRepository
+
+CategoryEntity .up.> Category
+SubEntity .up.> Sub
+
+@enduml
+
