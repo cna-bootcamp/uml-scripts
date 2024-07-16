@@ -1,0 +1,256 @@
+@startuml
+participant MyGroupController
+participant MyGroupService
+participant MyGroupProvider
+
+participant MySubController
+participant MySubService
+participant MySubProvider
+
+participant RabbitMQ
+
+participant SubscribeEventHandler
+participant UnsubscribeEventHandler
+participant CreateGroupEventHandler
+participant JoinGroupEventHandler
+participant LeaveGroupEventHandler
+
+participant MySubQueryRepository
+participant MySubGroupQueryRepository
+
+MyGroupController -> MyGroupService: createMyGroup(groupCreateDTO)
+activate MyGroupService
+
+MyGroupService -> MyGroupProvider: createMyGroup(myGroup)
+activate MyGroupProvider
+
+MyGroupProvider -> RabbitMQ: publishCreateGroupEvent(groupEvent)
+activate RabbitMQ
+
+RabbitMQ -> CreateGroupEventHandler: handleCreateGroupEvent(groupEvent)
+activate CreateGroupEventHandler
+
+CreateGroupEventHandler -> MySubQueryRepository: findByUserIdAndSubId(userId, subId)
+activate MySubQueryRepository
+MySubQueryRepository --> CreateGroupEventHandler: mySubQueryEntity
+deactivate MySubQueryRepository
+
+alt mySubQueryEntity exists
+    CreateGroupEventHandler -> MySubQueryRepository: save(mySubQueryEntity)
+    note right: Update mySubQueryEntity.joinGroup = true, mySubQueryEntity.groupId = groupId
+    activate MySubQueryRepository
+    MySubQueryRepository --> CreateGroupEventHandler
+    deactivate MySubQueryRepository
+end
+
+CreateGroupEventHandler -> MySubGroupQueryRepository: findByGroupIdAndSubId(groupId, subId)
+activate MySubGroupQueryRepository
+MySubGroupQueryRepository --> CreateGroupEventHandler: mySubGroupQueryEntity
+deactivate MySubGroupQueryRepository
+
+alt mySubGroupQueryEntity does not exist
+    CreateGroupEventHandler -> MySubGroupQueryRepository: save(newGroupEntity)
+    note right: Create new MySubGroupQueryEntity with groupId, subId, groupName, memberCount
+    activate MySubGroupQueryRepository
+    MySubGroupQueryRepository --> CreateGroupEventHandler
+    deactivate MySubGroupQueryRepository
+end
+
+CreateGroupEventHandler --> RabbitMQ
+deactivate CreateGroupEventHandler
+
+RabbitMQ --> MyGroupProvider
+deactivate RabbitMQ
+
+MyGroupProvider --> MyGroupService
+deactivate MyGroupProvider
+
+MyGroupService --> MyGroupController
+deactivate MyGroupService
+
+MyGroupController -> MyGroupService: joinMyGroup(groupJoinDTO)
+activate MyGroupService
+
+MyGroupService -> MyGroupProvider: joinMyGroup(groupJoinDTO)
+activate MyGroupProvider
+
+MyGroupProvider -> RabbitMQ: publishJoinGroupEvent(groupEvent)
+activate RabbitMQ
+
+RabbitMQ -> JoinGroupEventHandler: handleJoinGroupEvent(groupEvent)
+activate JoinGroupEventHandler
+
+JoinGroupEventHandler -> MySubQueryRepository: findByUserIdAndSubId(userId, subId)
+activate MySubQueryRepository
+MySubQueryRepository --> JoinGroupEventHandler: mySubQueryEntity
+deactivate MySubQueryRepository
+
+alt mySubQueryEntity exists
+    JoinGroupEventHandler -> MySubQueryRepository: save(mySubQueryEntity)
+    note right: Update mySubQueryEntity.joinGroup = true, mySubQueryEntity.groupId = groupId
+    activate MySubQueryRepository
+    MySubQueryRepository --> JoinGroupEventHandler
+    deactivate MySubQueryRepository
+else
+    JoinGroupEventHandler -> MySubQueryRepository: save(newEntity)
+    note right: Create new MySubQueryEntity with userId, subId, and other info
+    activate MySubQueryRepository
+    MySubQueryRepository --> JoinGroupEventHandler
+    deactivate MySubQueryRepository
+end
+
+JoinGroupEventHandler -> MySubGroupQueryRepository: findByGroupIdAndSubId(groupId, subId)
+activate MySubGroupQueryRepository
+MySubGroupQueryRepository --> JoinGroupEventHandler: mySubGroupQueryEntity
+deactivate MySubGroupQueryRepository
+
+alt mySubGroupQueryEntity exists
+    JoinGroupEventHandler -> MySubGroupQueryRepository: save(mySubGroupQueryEntity)
+    note right: Update mySubGroupQueryEntity.memberCount = groupEvent.memberCount
+    activate MySubGroupQueryRepository
+    MySubGroupQueryRepository --> JoinGroupEventHandler
+    deactivate MySubGroupQueryRepository
+else
+    JoinGroupEventHandler -> MySubGroupQueryRepository: save(newGroupEntity)
+    note right: Create new MySubGroupQueryEntity with groupId, subId, groupName, memberCount
+    activate MySubGroupQueryRepository
+    MySubGroupQueryRepository --> JoinGroupEventHandler
+    deactivate MySubGroupQueryRepository
+end
+
+JoinGroupEventHandler --> RabbitMQ
+deactivate JoinGroupEventHandler
+
+RabbitMQ --> MyGroupProvider
+deactivate RabbitMQ
+
+MyGroupProvider --> MyGroupService
+deactivate MyGroupProvider
+
+MyGroupService --> MyGroupController
+deactivate MyGroupService
+
+MyGroupController -> MyGroupService: leaveMyGroup(myGroupId, userId)
+activate MyGroupService
+
+MyGroupService -> MyGroupProvider: leaveMyGroup(myGroupId, userId)
+activate MyGroupProvider
+
+MyGroupProvider -> RabbitMQ: publishLeaveGroupEvent(groupEvent)
+activate RabbitMQ
+
+RabbitMQ -> LeaveGroupEventHandler: handleLeaveGroupEvent(groupEvent)
+activate LeaveGroupEventHandler
+
+LeaveGroupEventHandler -> MySubQueryRepository: findByUserIdAndSubId(userId, subId)
+activate MySubQueryRepository
+MySubQueryRepository --> LeaveGroupEventHandler: mySubQueryEntity
+deactivate MySubQueryRepository
+
+alt mySubQueryEntity exists
+    LeaveGroupEventHandler -> MySubQueryRepository: save(mySubQueryEntity)
+    note right: Update mySubQueryEntity.joinGroup = false
+    activate MySubQueryRepository
+    MySubQueryRepository --> LeaveGroupEventHandler
+    deactivate MySubQueryRepository
+end
+
+LeaveGroupEventHandler -> MySubGroupQueryRepository: findByGroupIdAndSubId(groupId, subId)
+activate MySubGroupQueryRepository
+MySubGroupQueryRepository --> LeaveGroupEventHandler: mySubGroupQueryEntity
+deactivate MySubGroupQueryRepository
+
+alt mySubGroupQueryEntity exists
+    LeaveGroupEventHandler -> MySubGroupQueryRepository: save(mySubGroupQueryEntity)
+    note right: Update mySubGroupQueryEntity.memberCount = groupEvent.memberCount
+    activate MySubGroupQueryRepository
+    MySubGroupQueryRepository --> LeaveGroupEventHandler
+    deactivate MySubGroupQueryRepository
+end
+
+LeaveGroupEventHandler --> RabbitMQ
+deactivate LeaveGroupEventHandler
+
+RabbitMQ --> MyGroupProvider
+deactivate RabbitMQ
+
+MyGroupProvider --> MyGroupService
+deactivate MyGroupProvider
+
+MyGroupService --> MyGroupController
+deactivate MyGroupService
+
+MySubController -> MySubService: subscribeSub(subId, userId)
+activate MySubService
+
+MySubService -> MySubProvider: subscribeSub(subId, userId)
+activate MySubProvider
+
+MySubProvider -> RabbitMQ: publishSubscribeEvent(subEvent)
+activate RabbitMQ
+
+RabbitMQ -> SubscribeEventHandler: handleSubscribeEvent(subEvent)
+activate SubscribeEventHandler
+
+SubscribeEventHandler -> MySubQueryRepository: findByUserIdAndSubId(userId, subId)
+activate MySubQueryRepository
+MySubQueryRepository --> SubscribeEventHandler: mySubQueryEntity
+deactivate MySubQueryRepository
+
+alt mySubQueryEntity not exists
+    SubscribeEventHandler -> MySubQueryRepository: save(newEntity)
+    note right: Create new MySubQueryEntity with userId, subId, and other info
+    activate MySubQueryRepository
+    MySubQueryRepository --> SubscribeEventHandler
+    deactivate MySubQueryRepository
+end
+
+SubscribeEventHandler --> RabbitMQ
+deactivate SubscribeEventHandler
+
+RabbitMQ --> MySubProvider
+deactivate RabbitMQ
+
+MySubProvider --> MySubService
+deactivate MySubProvider
+
+MySubService --> MySubController
+deactivate MySubService
+
+MySubController -> MySubService: cancelSub(subId, userId)
+activate MySubService
+
+MySubService -> MySubProvider: cancelSub(subId, userId)
+activate MySubProvider
+
+MySubProvider -> RabbitMQ: publishUnsubscribeEvent(subEvent)
+activate RabbitMQ
+
+RabbitMQ -> UnsubscribeEventHandler: handleUnsubscribeEvent(subEvent)
+activate UnsubscribeEventHandler
+
+UnsubscribeEventHandler -> MySubQueryRepository: findByUserIdAndSubId(userId, subId)
+activate MySubQueryRepository
+MySubQueryRepository --> UnsubscribeEventHandler: mySubQueryEntity
+deactivate MySubQueryRepository
+
+alt mySubQueryEntity exists
+    UnsubscribeEventHandler -> MySubQueryRepository: deleteByUserIdAndSubId(userId, subId)
+    note right: Delete mySubQueryEntity
+    activate MySubQueryRepository
+    MySubQueryRepository --> UnsubscribeEventHandler
+    deactivate MySubQueryRepository
+end
+
+UnsubscribeEventHandler --> RabbitMQ
+deactivate UnsubscribeEventHandler
+
+RabbitMQ --> MySubProvider
+deactivate RabbitMQ
+
+MySubProvider --> MySubService
+deactivate MySubProvider
+
+MySubService --> MySubController
+deactivate MySubService
+@enduml
