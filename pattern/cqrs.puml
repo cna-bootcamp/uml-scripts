@@ -1,9 +1,8 @@
 @startuml
-!include <tupadr3/font-awesome/users>
-!include <tupadr3/font-awesome/database>
+skinparam componentStyle rectangle
 
-package "Client" {
-  [Client] as client <<FA_USERS>>
+package "Presentation Layer" {
+  [User Interface] as ui
 }
 
 package "API Layer" {
@@ -11,32 +10,32 @@ package "API Layer" {
   [Query API] as queryApi
 }
 
-package "Command Side" {
-  [Command Handler] as commandHandler
-  [Domain Model] as domainModel
+package "Application Layer" {
+  package "Command Side" {
+    [Command Handler] as commandHandler
+    [Domain Model] as domainModel
+  }
+
+  package "Query Side" {
+    [Query Handler] as queryHandler
+    [Read Model] as readModel
+  }
 }
 
-database "Write Database" {
-  [Write DB] <<FA_DATABASE>>
+package "Infrastructure Layer" {
+  [Write Database] as writeDb
+  [Read Database] as readDb
 }
 
-package "Query Side" {
-  [Query Handler] as queryHandler
-  [Read Model] as readModel
-}
+ui --> commandApi
+ui --> queryApi
 
-database "Read Database" {
-  [Read DB] <<FA_DATABASE>>
-}
+commandApi --> commandHandler
+queryApi --> queryHandler
 
-client -> commandApi
-client -> queryApi
+commandHandler --> domainModel
+domainModel --> writeDb
 
-commandApi -> commandHandler
-commandHandler -> domainModel
-domainModel -> [Write DB]
-
-queryApi -> queryHandler
-queryHandler -> readModel
-readModel -> [Read DB]
+queryHandler --> readModel
+readModel --> readDb
 @enduml

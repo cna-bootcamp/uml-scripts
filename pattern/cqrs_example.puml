@@ -1,0 +1,55 @@
+@startuml
+skinparam componentStyle rectangle
+
+package "Presentation Layer" {
+  [User Interface] as ui
+}
+
+package "API Layer" {
+  [Command API] as commandApi
+  [Query API] as queryApi
+}
+
+package "Application Layer" {
+  package "Command Side" {
+    [Order Command Handler] as orderCommandHandler
+    [Delivery Command Handler] as deliveryCommandHandler
+    [Order Aggregate] as orderAggregate
+    [Delivery Aggregate] as deliveryAggregate
+  }
+  package "Query Side" {
+    [Order Status Query Handler] as orderStatusQueryHandler
+    [Order Status Read Model] as orderStatusReadModel
+  }
+}
+
+package "Domain Layer" {
+  [Order Domain Model] as orderDomainModel
+  [Delivery Domain Model] as deliveryDomainModel
+}
+
+package "Infrastructure Layer" {
+  [Order Write Database] as orderWriteDb
+  [Delivery Write Database] as deliveryWriteDb
+  [Order Status Read Database] as orderStatusReadDb
+  [Message Queue] as messageQueue
+}
+
+ui -[thickness=2]-> commandApi 
+ui -[thickness=2]-> queryApi 
+commandApi -[thickness=2]-> orderCommandHandler 
+commandApi -[thickness=2]-> deliveryCommandHandler 
+orderCommandHandler -[thickness=2]-> orderAggregate 
+deliveryCommandHandler -[thickness=2]-> deliveryAggregate 
+orderAggregate -[thickness=2]-> orderDomainModel 
+deliveryAggregate -[thickness=2]-> deliveryDomainModel 
+orderDomainModel -[thickness=2]-> orderWriteDb 
+deliveryDomainModel -[thickness=2]-> deliveryWriteDb 
+queryApi -[thickness=2]-> orderStatusQueryHandler 
+orderStatusQueryHandler -[thickness=2]-> orderStatusReadModel 
+orderStatusReadModel -[thickness=2]-> orderStatusReadDb 
+orderAggregate ..[thickness=2]> messageQueue 
+deliveryAggregate ..[thickness=2]> messageQueue 
+messageQueue ..[thickness=2]> orderStatusReadModel 
+
+@enduml

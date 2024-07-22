@@ -1,0 +1,54 @@
+@startuml
+package "Client" {
+  [Client] as client 
+}
+
+package "BFF_Layer" {
+  [BFF] as bff
+  note right of bff
+    Example endpoints:
+    GET /user-order-details/{userId}
+  end note
+}
+
+package "Microservices" {
+  [User_Service] as userService
+  note right of userService
+    Example endpoints:
+    GET /users/{id}
+    GET /users/{id}/orders
+  end note
+  
+  [Order_Service] as orderService
+  note right of orderService
+    Example endpoints:
+    GET /orders/{id}
+    GET /orders/{id}/items
+  end note
+  
+  [Product_Service] as productService
+  note right of productService
+    Example endpoints:
+    GET /products/{id}
+  end note
+}
+
+client --> bff
+
+bff --> userService
+note on link
+  GET /users/{userId}
+  GET /users/{userId}/orders
+end note
+
+bff --> orderService
+note on link
+  GET /orders/{orderId}
+  GET /orders/{orderId}/items
+end note
+
+bff --> productService
+note on link
+  GET /products/{productId}
+end note
+@enduml

@@ -1,0 +1,35 @@
+@startuml
+
+skinparam componentStyle rectangle
+
+RECTANGLE "Application" {
+    RECTANGLE "Business Logic" as BL
+    RECTANGLE "Data Access Layer" as DAL
+}
+
+database "Database" {
+    RECTANGLE "Business Data" as BD
+    RECTANGLE "Outbox Table" as OT
+}
+
+RECTANGLE "Message Relay" as MR
+queue "Message Broker" as MB
+
+BL -down-> DAL : 1. Invoke
+DAL -down-> BD : 2. Update
+DAL -down-> OT : 3. Insert event
+MR -up-> OT : 4. Poll for new events
+MR -right-> MB : 5. Publish event
+MR -up-> OT : 6. Mark as processed
+
+note right of DAL
+  Transactional boundary
+  (Atomic operation)
+end note
+
+note right of MR
+  Runs periodically or
+  triggered by DB change
+end note
+
+@enduml
