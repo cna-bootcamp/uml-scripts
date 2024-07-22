@@ -1,0 +1,24 @@
+@startuml
+[*] --> OrderCreated : createOrder()
+
+state OrderCreated {
+  [*] --> ConsumerVerified : verifyConsumerDetails()
+  ConsumerVerified --> TicketCreated : createTicket()
+  TicketCreated --> CreditCardAuthorized : authorizeCreditCard()
+  CreditCardAuthorized --> TicketApproved : approveTicket()
+  TicketApproved --> OrderApproved : approveOrder()
+  OrderApproved --> [*]
+}
+
+OrderCreated --> OrderRejected : rejectOrder()
+TicketCreated --> TicketRejected : rejectTicket()
+
+state OrderRejected {
+  [*] --> [*]
+}
+
+state TicketRejected {
+  [*] --> OrderRejected : rejectOrder()
+}
+
+@enduml
