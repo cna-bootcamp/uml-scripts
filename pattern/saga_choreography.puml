@@ -1,0 +1,35 @@
+@startuml
+package "Order Service" {
+  component [Order Service] as OS
+  queue "Order Queue" as OQ
+}
+
+package "Consumer Service" {
+  component [Consumer Service] as CS
+  queue "Consumer Queue" as CQ
+}
+
+package "Kitchen Service" {
+  component [Kitchen Service] as KS
+  queue "Kitchen Queue" as KQ
+}
+
+package "Accounting Service" {
+  component [Accounting Service] as AS
+  queue "Accounting Queue" as AQ
+}
+
+OS -right-> OQ: 1. createOrder()
+OQ -up-> CS: 2. verifyConsumerDetails
+CS -down-> CQ: 3. consumerDetailsVerified
+CQ -left-> OS: 4. consumerDetailsVerified
+OS -down-> KQ: 5. createTicket
+KQ -down-> KS: 6. createTicket
+KS -right-> KQ: 7. ticketCreated
+KQ -up-> AS: 8. authorizeCreditCard
+AS -down-> AQ: 9. creditCardAuthorized
+AQ -left-> KS: 10. creditCardAuthorized
+KS -up-> KQ: 11. approveTicket
+KQ -left-> OS: 12. ticketApproved
+OS -right-> OQ: 13. approveOrder
+@enduml

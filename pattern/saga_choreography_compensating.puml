@@ -1,0 +1,22 @@
+@startuml
+package "Order Service" {
+ component [Order Service] as OS
+ queue "Order Queue" as OQ
+}
+
+package "Kitchen Service" {
+ component [Kitchen Service] as KS
+ queue "Kitchen Queue" as KQ
+}
+
+package "Accounting Service" {
+ component [Accounting Service] as AS
+ queue "Accounting Queue" as AQ
+}
+
+AS -down-> AQ: 1. creditCardAuthorizationFailed
+AQ -left-> KS: 2. creditCardAuthorizationFailed
+KS -up-> KQ: 3. rejectTicket
+KQ -left-> OS: 4. ticketRejected
+OS -right-> OQ: 5. rejectOrder
+@enduml
