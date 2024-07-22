@@ -1,0 +1,43 @@
+@startuml
+!include <tupadr3/font-awesome/users>
+!include <tupadr3/font-awesome/mobile>
+!include <tupadr3/font-awesome/database>
+
+package "Client" {
+  [Mobile App] as mobile <<FA_MOBILE>>
+  [Web App] as web <<FA_USERS>>
+}
+
+package "API Gateway" {
+  [API Gateway] as gateway
+  gateway -down-> [Authentication Service]
+  gateway -down-> [Logging Service] 
+}
+
+package "BFF Layer" {
+  [Mobile BFF] as mobileBff
+  [Web BFF] as webBff
+}
+
+package "Microservices" {
+  [User Service] as user 
+  [Order Service] as order
+}
+
+database "Database Layer" {
+  [User DB] <<FA_DATABASE>>
+  [Order DB] <<FA_DATABASE>>
+}
+
+mobile .right.> mobileBff
+web .right.> webBff
+
+mobileBff .right.> gateway
+webBff .right.> gateway
+
+gateway .right.> user
+gateway .right.> order
+
+user .down.> [User DB]
+order .down.> [Order DB]
+@enduml

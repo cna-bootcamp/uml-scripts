@@ -1,0 +1,42 @@
+@startuml
+!include <tupadr3/font-awesome/users>
+!include <tupadr3/font-awesome/database>
+
+package "Client" {
+  [Client] as client <<FA_USERS>>
+}
+
+package "API Layer" {
+  [Command API] as commandApi
+  [Query API] as queryApi
+}
+
+package "Command Side" {
+  [Command Handler] as commandHandler
+  [Domain Model] as domainModel
+}
+
+database "Write Database" {
+  [Write DB] <<FA_DATABASE>>
+}
+
+package "Query Side" {
+  [Query Handler] as queryHandler
+  [Read Model] as readModel
+}
+
+database "Read Database" {
+  [Read DB] <<FA_DATABASE>>
+}
+
+client -> commandApi
+client -> queryApi
+
+commandApi -> commandHandler
+commandHandler -> domainModel
+domainModel -> [Write DB]
+
+queryApi -> queryHandler
+queryHandler -> readModel
+readModel -> [Read DB]
+@enduml
