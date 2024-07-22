@@ -1,0 +1,252 @@
+//------------------- Domain event 클래스 -----------------------
+@Getter
+@AllArgsConstructor
+public abstract class DomainEvent {
+    private String eventType;
+    private LocalDateTime occurredOn;
+
+    public DomainEvent() {
+        this.occurredOn = LocalDateTime.now();
+    }
+}
+
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
+class AccountCreatedEvent extends DomainEvent {
+    private String accountId;
+    private String owner;
+
+    public AccountCreatedEvent(String accountId, String owner) {
+        super("AccountCreated", LocalDateTime.now());
+        this.accountId = accountId;
+        this.owner = owner;
+    }
+}
+
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
+class MoneyDepositedEvent extends DomainEvent {
+    private String accountId;
+    private BigDecimal amount;
+
+    public MoneyDepositedEvent(String accountId, BigDecimal amount) {
+        super("MoneyDeposited", LocalDateTime.now());
+        this.accountId = accountId;
+        this.amount = amount;
+    }
+}
+
+public interface EventStore {
+    void saveEvent(DomainEvent event);
+    List<DomainEvent> getEvents(String aggregateId);
+}
+
+//--------------------- Event Store ------------------------
+@Component
+class EventStoreImpl implements EventStore {
+    private final Map<String, List<DomainEvent>> store = new HashMap<>();
+
+    @Override
+    public void saveEvent(DomainEvent event) {
+        store.computeIfAbsent(getAggregateId(event), id -> new ArrayList<>()).add(event);
+    }
+
+    @Override
+    public List<DomainEvent> getEvents(String aggregateId) {
+        return store.getOrDefault(aggregateId, Collections.emptyList());
+    }
+
+    private String getAggregateId(DomainEvent event) {
+        if (event instanceof AccountCreatedEvent) {
+            return ((AccountCreatedEvent) event).getAccountId();
+        } else if (event instanceof MoneyDepositedEvent) {
+            return ((MoneyDepositedEvent) event).getAccountId();
+        }
+        throw new IllegalArgumentException("Unknown event type: " + event.getClass());
+    }
+}
+
+//------------------- Aggregate  ------------------------------
+@Getter
+public class Account {
+    private String id;
+    private String owner;
+    private BigDecimal balance;
+    private List<DomainEvent> changes = new ArrayList<>();
+
+    public Account() {
+    }
+
+    public Account(String id, String owner) {
+        applyChange(new AccountCreatedEvent(id, owner));
+    }
+
+    public void deposit(BigDecimal amount) {
+        applyChange(new MoneyDepositedEvent(id, amount));
+    }
+
+    private void applyChange(DomainEvent event) {
+        applyEvent(event);
+        changes.add(event);
+    }
+
+    public void applyEvent(DomainEvent event) {
+        if (event instanceof AccountCreatedEvent) {
+            AccountCreatedEvent createdEvent = (AccountCreatedEvent) event;
+            this.id = createdEvent.getAccountId();
+            this.owner = createdEvent.getOwner();
+            this.balance = BigDecimal.ZERO;
+        } else if (event instanceof MoneyDepositedEvent) {
+            MoneyDepositedEvent depositedEvent = (MoneyDepositedEvent) event;
+            this.balance = this.balance.add(depositedEvent.getAmount());
+        }
+    }
+
+    public List<DomainEvent> getChanges() {
+        return new ArrayList<>(changes);
+    }
+
+    public void clearChanges() {
+        changes.clear();
+    }
+
+    public static Account replayEvents(List<DomainEvent> events) {
+        Account account = new Account();
+        events.forEach(account::applyEvent);
+        return account;
+    }
+}
+
+//------------------------- Command  -------------------------------
+
+public interface Command {
+    void execute(Account account);
+}
+
+@AllArgsConstructor
+class CreateAccountCommand implements Command {
+    private String accountId;
+    private String owner;
+
+    @Override
+    public void execute(Account account) {
+        account.applyEvent(new AccountCreatedEvent(accountId, owner));
+    }
+}
+
+@AllArgsConstructor
+class DepositMoneyCommand implements Command {
+    private String accountId;
+    private BigDecimal amount;
+
+    @Override
+    public void execute(Account account) {
+        account.deposit(amount);
+    }
+}
+
+//-------------- Projection & View --------------------------
+@Entity
+@Table(name = "account_view")
+@Getter
+@Setter
+class AccountView {
+    @Id
+    private String id;
+    private String owner;
+    private BigDecimal balance;
+}
+
+@Component
+class AccountProjection {
+    private final AccountViewRepository viewRepository;
+
+    public AccountProjection(AccountViewRepository viewRepository) {
+        this.viewRepository = viewRepository;
+    }
+
+    @Transactional
+    public void handleEvent(DomainEvent event) {
+        if (event instanceof AccountCreatedEvent) {
+            AccountCreatedEvent createdEvent = (AccountCreatedEvent) event;
+            AccountView view = new AccountView();
+            view.setId(createdEvent.getAccountId());
+            view.setOwner(createdEvent.getOwner());
+            view.setBalance(BigDecimal.ZERO);
+            viewRepository.save(view);
+        } else if (event instanceof MoneyDepositedEvent) {
+            MoneyDepositedEvent depositedEvent = (MoneyDepositedEvent) event;
+            AccountView view = viewRepository.findById(depositedEvent.getAccountId()).orElseThrow();
+            view.setBalance(view.getBalance().add(depositedEvent.getAmount()));
+            viewRepository.save(view);
+        }
+    }
+}
+
+interface AccountViewRepository extends JpaRepository<AccountView, String> {
+}
+
+//---------------------- Service ---------------------------
+@Service
+@AllArgsConstructor
+public class AccountService {
+    private final EventStore eventStore;
+    private final AccountProjection projection;
+
+    public void createAccount(String accountId, String owner) {
+        Account account = new Account();
+        new CreateAccountCommand(accountId, owner).execute(account);
+        saveAndPublishEvents(account);
+    }
+
+    public void depositMoney(String accountId, BigDecimal amount) {
+        List<DomainEvent> events = eventStore.getEvents(accountId);
+        Account account = Account.replayEvents(events);
+        new DepositMoneyCommand(accountId, amount).execute(account);
+        saveAndPublishEvents(account);
+    }
+
+    private void saveAndPublishEvents(Account account) {
+        eventStore.saveEvent(new ArrayList<>(account.getChanges()));
+        account.getChanges().forEach(projection::handleEvent);
+        account.clearChanges();
+    }
+}
+
+//---------------------- Controller ---------------------------
+@RestController
+@RequestMapping("/accounts")
+@AllArgsConstructor
+class AccountController {
+    private final AccountService service;
+    private final AccountViewRepository viewRepository;
+
+    @PostMapping
+    public void createAccount(@RequestBody CreateAccountRequest request) {
+        service.createAccount(request.getAccountId(), request.getOwner());
+    }
+
+    @PostMapping("/{accountId}/deposit")
+    public void depositMoney(@PathVariable String accountId, @RequestBody DepositRequest request) {
+        service.depositMoney(accountId, request.getAmount());
+    }
+
+    @GetMapping("/{accountId}")
+    public AccountView getAccount(@PathVariable String accountId) {
+        return viewRepository.findById(accountId).orElseThrow();
+    }
+}
+
+@Value
+class CreateAccountRequest {
+    String accountId;
+    String owner;
+}
+
+@Value
+class DepositRequest {
+    BigDecimal amount;
+}
+
